@@ -4,7 +4,7 @@
     "blockstream.info": 200,
     "blockchain.info": 200,
     "bitaps.com": 200,
-    "sochain.com": 502
+    "sochain.com": "HTTPSConnectionPool(host='sochain.com', port=443): Read time"
   },
   "working": [
     "mempool.space",

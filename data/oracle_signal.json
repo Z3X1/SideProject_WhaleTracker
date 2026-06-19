@@ -1,13 +1,13 @@
 {
   "meta": {
-    "generated_at": "2026-06-19T19:48:58.557162+00:00",
+    "generated_at": "2026-06-19T21:14:44.170487+00:00",
     "version": "signal_bridge_v1.0",
     "framework": "GEX Oracle Unified Field Theory"
   },
   "whale_signal": {
-    "ts": "2026-06-19T19:00:00Z",
-    "raw_score": -0.001,
-    "weighted_score": -0.0003,
+    "ts": "2026-06-19T21:00:00Z",
+    "raw_score": 0.001,
+    "weighted_score": 0.0003,
     "components": {
       "exchange_flow": {
         "score": 0.0,
@@ -25,32 +25,35 @@
         "weight": 0.15
       },
       "balance_delta": {
-        "score": -0.005254593799983922,
-        "net_btc": -2.6272968999919613,
+        "score": 0.0075189140599995884,
+        "net_btc": 3.759457029999794,
         "weight": 0.1
       }
     },
     "trend": "STABLE",
     "hard_triggers": [],
-    "confidence": 1.0,
-    "large_tx_count": 20,
-    "largest_tx": {
-      "txid": "95e2356aa62b948f...",
-      "address": "bc1qgdjqv0av3q56...",
-      "ts_block": "2025-04-23T12:25:30+00:00",
-      "direction": "out",
-      "value_btc": 12000.000022460008,
-      "counterparty": "Huobi"
-    }
+    "confidence": 0.25,
+    "large_tx_count": 0,
+    "largest_tx": null
   },
-  "narrative": "Whale behavior neutral: -0.001 \u2014 no clear directional signal",
+  "narrative": "Whale behavior neutral: +0.001 \u2014 no clear directional signal",
   "oracle_input": {
-    "behavior_component": -0.0003,
+    "behavior_component": 0.0003,
     "hard_triggers": [],
-    "confidence": 1.0
+    "confidence": 0.25
   },
   "raw_data": {
     "hourly_summaries": [
+      {
+        "ts": "2026-06-19T21:00:00Z",
+        "signal_score": 0.0,
+        "exchange_inflow": 0.0,
+        "exchange_outflow": 0.0,
+        "net_exchange_flow": 0.0,
+        "sync_event_count": 0,
+        "dormant_wake_count": 0,
+        "top_signal": "NONE"
+      },
       {
         "ts": "2026-06-19T19:00:00Z",
         "signal_score": 0.0,
@@ -70,74 +73,16 @@
         "sync_event_count": 0,
         "dormant_wake_count": 0,
         "top_signal": "NONE"
-      },
-      {
-        "ts": "2026-06-19T15:00:00Z",
-        "signal_score": 0.0,
-        "exchange_inflow": 0.0,
-        "exchange_outflow": 0.0,
-        "net_exchange_flow": 0.0,
-        "sync_event_count": 0,
-        "dormant_wake_count": 0,
-        "top_signal": "NONE"
       }
     ],
-    "large_txs": [
-      {
-        "txid": "95e2356aa62b948f...",
-        "address": "bc1qgdjqv0av3q56...",
-        "ts_block": "2025-04-23T12:25:30+00:00",
-        "direction": "out",
-        "value_btc": 12000.000022460008,
-        "counterparty": "Huobi"
-      },
-      {
-        "txid": "7910fdb3063ddd61...",
-        "address": "bc1qgdjqv0av3q56...",
-        "ts_block": "2025-06-03T03:06:19+00:00",
-        "direction": "out",
-        "value_btc": 9000.000018470018,
-        "counterparty": "Huobi"
-      },
-      {
-        "txid": "d5a4a1c1646d4261...",
-        "address": "bc1qjasf9z3h7w3j...",
-        "ts_block": "2025-12-31T21:15:55+00:00",
-        "direction": "in",
-        "value_btc": 8888.8888888,
-        "counterparty": "Huobi"
-      },
-      {
-        "txid": "71ff97fb351e571a...",
-        "address": "bc1qjasf9z3h7w3j...",
-        "ts_block": "2025-09-30T11:06:35+00:00",
-        "direction": "in",
-        "value_btc": 8888.8888888,
-        "counterparty": "Huobi"
-      },
-      {
-        "txid": "8994576d71ae1409...",
-        "address": "bc1qgdjqv0av3q56...",
-        "ts_block": "2025-04-17T18:46:12+00:00",
-        "direction": "out",
-        "value_btc": 5000.000541300018,
-        "counterparty": "Huobi"
-      }
-    ],
+    "large_txs": [],
     "top_movers": [
       {
         "address": "1Kr6QSydW9bFQG1mXiPNNu6WpJGmUa9i1g",
         "label": "Huobi",
-        "balance_btc": 5518.57504703,
-        "balance_delta": -2.627306420000423,
+        "balance_btc": 5522.33450406,
+        "balance_delta": 3.759457029999794,
         "rank": 20
-      },
-      {
-        "address": "bc1ql49ydapnjafl5t2cp9zqpjwe6pdgmxy98859v2",
-        "label": "Robinhood",
-        "balance_btc": 140849.98536624,
-        "balance_delta": 9.520008461549878e-06,
-        "rank": 3
       },
       {
         "address": "34xp4vRoCGJym3xR7yCVPFHoCNxv4Twseo",
@@ -152,6 +97,13 @@
         "balance_btc": 174934.29416806,
         "balance_delta": 0.0,
         "rank": 2
+      },
+      {
+        "address": "bc1ql49ydapnjafl5t2cp9zqpjwe6pdgmxy98859v2",
+        "label": "Robinhood",
+        "balance_btc": 140849.98536624,
+        "balance_delta": 0.0,
+        "rank": 3
       },
       {
         "address": "bc1qgdjqv0av3q56jvd82tkdjpy7gdp9ut8tlqmgrpmv24sq90ecnvqqjwvw97",
