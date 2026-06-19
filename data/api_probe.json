@@ -1,0 +1,15 @@
+{
+  "results": {
+    "mempool.space": 200,
+    "blockstream.info": 200,
+    "blockchain.info": 200,
+    "bitaps.com": 200,
+    "sochain.com": 502
+  },
+  "working": [
+    "mempool.space",
+    "blockstream.info",
+    "blockchain.info",
+    "bitaps.com"
+  ]
+}
