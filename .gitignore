@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.Python
+*.egg-info/
+dist/
+build/
+
+# SQLite DB（用 GitHub Actions cache 保留，不 commit）
+data/whale.db
+
+# 本地環境
+.env
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db

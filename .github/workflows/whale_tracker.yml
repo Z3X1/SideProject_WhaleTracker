@@ -1,0 +1,154 @@
+name: GEX Oracle - Whale Tracker (Hourly)
+
+on:
+  schedule:
+    # 每小時整點執行（UTC）
+    - cron: '0 * * * *'
+  workflow_dispatch:
+    # 允許手動觸發（測試用）
+    inputs:
+      debug_mode:
+        description: '啟用 debug 輸出'
+        required: false
+        default: 'false'
+
+# 防止並發執行（同一批次只跑一個）
+concurrency:
+  group: whale-tracker
+  cancel-in-progress: false
+
+jobs:
+  collect-and-analyze:
+    name: 鯨魚數據採集 & 信號生成
+    runs-on: ubuntu-latest
+    timeout-minutes: 45   # 免費 tier 限制：單 job ≤ 6h，保守設 45min
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}   # 需要 write 權限（push 數據）
+
+      # ── 2. 還原 SQLite 數據庫（從 artifact 或 release）───────────────────────
+      - name: Restore whale database
+        uses: actions/cache@v4
+        with:
+          path: data/whale.db
+          key: whale-db-${{ github.run_number }}
+          restore-keys: |
+            whale-db-
+
+      # ── 3. Python 環境 ────────────────────────────────────────────────────
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # ── 4. 執行主採集 ─────────────────────────────────────────────────────
+      - name: Run whale tracker
+        run: python src/whale_tracker.py
+        env:
+          PYTHONUNBUFFERED: '1'
+
+      # ── 5. 執行信號橋接 ───────────────────────────────────────────────────
+      - name: Generate Oracle signal
+        run: python src/signal_bridge.py
+
+      # ── 6. 輸出信號摘要到 GitHub Actions Summary ──────────────────────────
+      - name: Write job summary
+        if: always()
+        run: |
+          echo "## 🐳 GEX Oracle 鯨魚信號報告" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**執行時間**: $(date -u '+%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f data/oracle_signal.json ]; then
+            SCORE=$(python -c "import json; d=json.load(open('data/oracle_signal.json')); print(d['whale_signal']['raw_score'])")
+            TREND=$(python -c "import json; d=json.load(open('data/oracle_signal.json')); print(d['whale_signal']['trend'])")
+            TRIGGERS=$(python -c "import json; d=json.load(open('data/oracle_signal.json')); print(len(d['whale_signal']['hard_triggers']))")
+            NARRATIVE=$(python -c "import json; d=json.load(open('data/oracle_signal.json')); print(d['narrative'])")
+            echo "| 指標 | 數值 |" >> $GITHUB_STEP_SUMMARY
+            echo "|------|------|" >> $GITHUB_STEP_SUMMARY
+            echo "| 信號評分 | \`${SCORE}\` |" >> $GITHUB_STEP_SUMMARY
+            echo "| 趨勢 | ${TREND} |" >> $GITHUB_STEP_SUMMARY
+            echo "| 硬性觸發 | ${TRIGGERS} 個 |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "> ${NARRATIVE}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ 信號文件未生成" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      # ── 7. Commit 數據回 repo ─────────────────────────────────────────────
+      - name: Commit data updates
+        run: |
+          git config user.name  "GEX Oracle Bot"
+          git config user.email "gex-oracle@noreply.github.com"
+          git add data/latest_summary.json data/oracle_signal.json
+          # SQLite DB 不 commit（太大），用 cache 跨 run 保留
+          git diff --staged --quiet || git commit -m "chore(data): whale snapshot $(date -u '+%Y-%m-%dT%H:00Z')"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+
+      # ── 8. 檢查是否需要觸發 Oracle 告警 ──────────────────────────────────
+      - name: Check hard triggers
+        run: |
+          python -c "
+          import json, sys
+          with open('data/oracle_signal.json') as f:
+            d = json.load(f)
+          triggers = d['whale_signal']['hard_triggers']
+          if triggers:
+            print('⚡ 硬性觸發條件滿足：')
+            for t in triggers:
+              print(f'  - [{t[\"type\"]}] {t[\"message\"]}')
+            sys.exit(2)  # exit code 2 = 觸發告警（非失敗）
+          else:
+            print('✅ 無硬性觸發條件')
+          "
+        continue-on-error: true   # 觸發告警不應讓 workflow 失敗
+
+  # ── 每日匯總 job（UTC 00:00 額外執行）────────────────────────────────────────
+  daily-report:
+    name: 每日鯨魚行為報告
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 0 * * *' || github.event_name == 'workflow_dispatch'
+    needs: collect-and-analyze
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+
+      - uses: actions/cache@v4
+        with:
+          path: data/whale.db
+          key: whale-db-${{ github.run_number }}
+          restore-keys: |
+            whale-db-
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - run: pip install -r requirements.txt
+
+      - name: Generate daily report
+        run: python src/daily_report.py
+
+      - name: Commit daily report
+        run: |
+          git config user.name  "GEX Oracle Bot"
+          git config user.email "gex-oracle@noreply.github.com"
+          DATE=$(date -u '+%Y-%m-%d')
+          git add "data/daily_${DATE}.json" dashboard/whale_dashboard.html || true
+          git diff --staged --quiet || git commit -m "feat(report): daily whale report ${DATE}"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
