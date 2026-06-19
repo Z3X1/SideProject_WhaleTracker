@@ -113,10 +113,19 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("""CREATE TABLE IF NOT EXISTS address_snapshots (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT NOT NULL, rank INTEGER NOT NULL,
-        address TEXT NOT NULL, label TEXT, balance_btc REAL NOT NULL,
-        tx_count INTEGER NOT NULL, first_seen TEXT, last_seen TEXT,
-        balance_delta REAL DEFAULT 0)""")
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ts TEXT NOT NULL,
+        rank INTEGER NOT NULL,
+        address TEXT NOT NULL,
+        label TEXT,
+        balance_btc REAL NOT NULL,
+        balance_btc_total REAL,
+        tx_count INTEGER NOT NULL,
+        tx_count_confirmed INTEGER,
+        first_seen TEXT,
+        last_seen TEXT,
+        balance_delta REAL DEFAULT 0,
+        source TEXT)""")  
     c.execute("""CREATE TABLE IF NOT EXISTS transactions (
         txid TEXT NOT NULL, address TEXT NOT NULL, ts_block TEXT,
         ts_fetched TEXT NOT NULL, direction TEXT NOT NULL, value_btc REAL NOT NULL,
@@ -216,26 +225,46 @@ class ChainClient:
         return None
 
     def get_address_info(self, address: str) -> dict:
-        """Returns balance (BTC) and total TX count. Tries all APIs."""
+        """
+        Returns balance (BTC) and total TX count. Tries all APIs.
+
+        Handles all address types:
+          P2PKH  (1...)    — legacy
+          P2SH   (3...)    — script hash
+          P2WPKH (bc1q..42) — native segwit
+          P2WSH  (bc1q..62) — native segwit script (multisig/exchange cold wallets)
+          P2TR   (bc1p...)  — taproot
+        All share the same esplora endpoint; chain_stats structure is identical.
+        """
         # Try esplora hosts first
         data = self._get_esplora(f"/api/address/{address}")
-        if data:
+        if data and isinstance(data, dict):
             cs = data.get("chain_stats", {})
-            self.stats["success"] += 1
-            return {
-                "balance_btc": (cs.get("funded_txo_sum", 0) - cs.get("spent_txo_sum", 0)) / 1e8,
-                "tx_count":    cs.get("tx_count", 0),
-                "source":      "esplora",
-            }
+            ms = data.get("mempool_stats", {})
+            # chain_stats present = valid response for ALL address types
+            if "funded_txo_sum" in cs or "tx_count" in cs:
+                confirmed_bal = (cs.get("funded_txo_sum", 0) - cs.get("spent_txo_sum", 0)) / 1e8
+                # Include unconfirmed mempool balance
+                mempool_delta = (ms.get("funded_txo_sum", 0) - ms.get("spent_txo_sum", 0)) / 1e8
+                self.stats["success"] += 1
+                return {
+                    "balance_btc":        confirmed_bal,
+                    "balance_btc_total":  confirmed_bal + mempool_delta,
+                    "tx_count":           cs.get("tx_count", 0) + ms.get("tx_count", 0),
+                    "tx_count_confirmed": cs.get("tx_count", 0),
+                    "source":             "esplora",
+                }
 
-        # blockchain.info fallback
+        # blockchain.info fallback (supports P2WSH via rawaddr endpoint)
         data = self._get_blockchain_info(address, limit=1)
-        if data:
+        if data and isinstance(data, dict) and "final_balance" in data:
             self.stats["fallback_used"] += 1
             return {
-                "balance_btc": data.get("final_balance", 0) / 1e8,
-                "tx_count":    data.get("n_tx", 0),
-                "source":      "blockchain.info",
+                "balance_btc":        data.get("final_balance", 0) / 1e8,
+                "balance_btc_total":  data.get("final_balance", 0) / 1e8,
+                "tx_count":           data.get("n_tx", 0),
+                "tx_count_confirmed": data.get("n_tx", 0),
+                "source":             "blockchain.info",
             }
 
         self.stats["failed"] += 1
@@ -410,9 +439,13 @@ def run_hourly_batch():
         label       = EXCHANGE_LABELS.get(address)
 
         c.execute("""INSERT INTO address_snapshots
-            (ts, rank, address, label, balance_btc, tx_count, balance_delta)
-            VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            (ts_now, rank, address, label, balance_btc, info["tx_count"], delta))
+            (ts, rank, address, label, balance_btc, balance_btc_total,
+             tx_count, tx_count_confirmed, balance_delta, source)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (ts_now, rank, address, label,
+             info["balance_btc"], info.get("balance_btc_total", info["balance_btc"]),
+             info["tx_count"], info.get("tx_count_confirmed", info["tx_count"]),
+             delta, info.get("source", "unknown")))
         snapshot_count += 1
 
         if rank % 10 == 0:
