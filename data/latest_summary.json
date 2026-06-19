@@ -1,0 +1,16 @@
+{
+  "ts": "2026-06-19T06:32:02Z",
+  "signal_score": 0.0,
+  "exchange_flows": {
+    "inflow": 0,
+    "outflow": 0,
+    "net": 0,
+    "by_exchange": {},
+    "signal": "NEUTRAL",
+    "direction": "bear"
+  },
+  "sync_events": 0,
+  "dormant_wakes": 0,
+  "top_signal": "NONE",
+  "addresses_tracked": 0
+}

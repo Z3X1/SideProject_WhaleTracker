@@ -1,0 +1,61 @@
+{
+  "meta": {
+    "generated_at": "2026-06-19T06:32:18.816126+00:00",
+    "version": "signal_bridge_v1.0",
+    "framework": "GEX Oracle 統一場論"
+  },
+  "whale_signal": {
+    "ts": "2026-06-19T06:00:00Z",
+    "raw_score": 0.0,
+    "weighted_score": 0.0,
+    "components": {
+      "exchange_flow": {
+        "score": 0.0,
+        "net_btc": 0.0,
+        "weight": 0.45
+      },
+      "sync_move": {
+        "score": 0.0,
+        "event_count": 0,
+        "weight": 0.3
+      },
+      "dormant_wake": {
+        "score": -0.0,
+        "count": 0,
+        "weight": 0.15
+      },
+      "balance_delta": {
+        "score": 0.0,
+        "net_btc": 0,
+        "weight": 0.1
+      }
+    },
+    "trend": "INSUFFICIENT_DATA",
+    "hard_triggers": [],
+    "confidence": 0.08,
+    "large_tx_count": 0,
+    "largest_tx": null
+  },
+  "narrative": "鯨魚行為中性：+0.000，無明確方向性信號",
+  "oracle_input": {
+    "behavior_component": 0.0,
+    "hard_triggers": [],
+    "confidence": 0.08
+  },
+  "raw_data": {
+    "hourly_summaries": [
+      {
+        "ts": "2026-06-19T06:00:00Z",
+        "signal_score": 0.0,
+        "exchange_inflow": 0.0,
+        "exchange_outflow": 0.0,
+        "net_exchange_flow": 0.0,
+        "sync_event_count": 0,
+        "dormant_wake_count": 0,
+        "top_signal": "NONE"
+      }
+    ],
+    "large_txs": [],
+    "top_movers": []
+  }
+}
