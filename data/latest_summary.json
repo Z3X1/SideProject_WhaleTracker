@@ -1,5 +1,5 @@
 {
-  "ts": "2026-06-19T13:22:19Z",
+  "ts": "2026-06-19T14:06:26Z",
   "signal_score": 0.0,
   "exchange_flows": {
     "inflow": 0,
@@ -12,6 +12,6 @@
   "sync_events": 0,
   "dormant_wakes": 0,
   "top_signal": "NONE",
-  "addresses_tracked": 26,
-  "tx_records": 1175
+  "addresses_tracked": 28,
+  "tx_records": 1321
 }

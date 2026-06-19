@@ -1,13 +1,13 @@
 {
   "meta": {
-    "generated_at": "2026-06-19T13:42:59.458636+00:00",
+    "generated_at": "2026-06-19T14:15:42.202076+00:00",
     "version": "signal_bridge_v1.0",
     "framework": "GEX Oracle Unified Field Theory"
   },
   "whale_signal": {
-    "ts": "2026-06-19T13:00:00Z",
-    "raw_score": 0.031,
-    "weighted_score": 0.0087,
+    "ts": "2026-06-19T14:00:00Z",
+    "raw_score": 0.004,
+    "weighted_score": 0.0011,
     "components": {
       "exchange_flow": {
         "score": 0.0,
@@ -25,12 +25,12 @@
         "weight": 0.15
       },
       "balance_delta": {
-        "score": 0.3147308224199987,
-        "net_btc": 157.36541120999937,
+        "score": 0.041603278239999784,
+        "net_btc": 20.80163911999989,
         "weight": 0.1
       }
     },
-    "trend": "INSUFFICIENT_DATA",
+    "trend": "STABLE",
     "hard_triggers": [],
     "confidence": 1.0,
     "large_tx_count": 20,
@@ -43,14 +43,24 @@
       "counterparty": null
     }
   },
-  "narrative": "Whale behavior neutral: +0.031 \u2014 no clear directional signal",
+  "narrative": "Whale behavior neutral: +0.004 \u2014 no clear directional signal",
   "oracle_input": {
-    "behavior_component": 0.0087,
+    "behavior_component": 0.0011,
     "hard_triggers": [],
     "confidence": 1.0
   },
   "raw_data": {
     "hourly_summaries": [
+      {
+        "ts": "2026-06-19T14:00:00Z",
+        "signal_score": 0.0,
+        "exchange_inflow": 0.0,
+        "exchange_outflow": 0.0,
+        "net_exchange_flow": 0.0,
+        "sync_event_count": 0,
+        "dormant_wake_count": 0,
+        "top_signal": "NONE"
+      },
       {
         "ts": "2026-06-19T13:00:00Z",
         "signal_score": 0.0,
@@ -116,18 +126,11 @@
     ],
     "top_movers": [
       {
-        "address": "bc1qm34lsc65zpw79lxes69zkqmk6ee3ewf0j77s3h",
-        "label": null,
-        "balance_btc": 11228.82642041,
-        "balance_delta": 174.10263392999877,
-        "rank": 25
-      },
-      {
         "address": "1Kr6QSydW9bFQG1mXiPNNu6WpJGmUa9i1g",
         "label": "Huobi",
-        "balance_btc": 5517.75355913,
-        "balance_delta": -16.73722271999941,
-        "rank": 13
+        "balance_btc": 5538.55519825,
+        "balance_delta": 20.80163911999989,
+        "rank": 20
       },
       {
         "address": "34xp4vRoCGJym3xR7yCVPFHoCNxv4Twseo",
@@ -137,16 +140,23 @@
         "rank": 1
       },
       {
-        "address": "1P5ZEDWTKTFGxQjZphgWPQUpe554WKDfHQ",
-        "label": "Coinbase",
-        "balance_btc": 0.02318875,
+        "address": "3M219KR5vEneNb47ewrPfWyb5jQ2DjxRP6",
+        "label": "Binance",
+        "balance_btc": 174934.29416806,
+        "balance_delta": 0.0,
+        "rank": 2
+      },
+      {
+        "address": "bc1ql49ydapnjafl5t2cp9zqpjwe6pdgmxy98859v2",
+        "label": "Robinhood",
+        "balance_btc": 140849.98535672,
         "balance_delta": 0.0,
         "rank": 3
       },
       {
-        "address": "3Cbq7aT1tY8kMxWLbitaG7yT6bPbKChq64",
-        "label": "Coinbase",
-        "balance_btc": 0.20428901,
+        "address": "bc1qgdjqv0av3q56jvd82tkdjpy7gdp9ut8tlqmgrpmv24sq90ecnvqqjwvw97",
+        "label": "Bitfinex",
+        "balance_btc": 130010.07900252,
         "balance_delta": 0.0,
         "rank": 4
       }
