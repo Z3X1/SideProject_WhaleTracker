@@ -60,7 +60,7 @@
 <body>
 <header>
   <h1>🐳 GEX Oracle — Whale On-Chain Behavior Tracker</h1>
-  <div class="meta">Updated: 2026-06-20 13:55 UTC | 41 addresses | Source: mempool.space / blockstream.info</div>
+  <div class="meta">Updated: 2026-06-20 15:48 UTC | 41 addresses | Source: mempool.space / blockstream.info</div>
 </header>
 
 <div class="tabs">
@@ -86,12 +86,12 @@
     </div>
     <div class="card">
       <h2>Total BTC Tracked</h2>
-      <div class="kpi" style="color:var(--blue)">1,360,673</div>
-      <div class="sub">28 addresses | ≈ $142,870,710,976M @ $105k</div>
+      <div class="kpi" style="color:var(--blue)">1,360,675</div>
+      <div class="sub">28 addresses | ≈ $142,870,920,898M @ $105k</div>
     </div>
     <div class="card">
       <h2>Large Txs (24h)</h2>
-      <div class="kpi" style="color:var(--purple)">2</div>
+      <div class="kpi" style="color:var(--purple)">1</div>
       <div class="sub">Transactions ≥ 10 BTC captured</div>
     </div>
   </div>
@@ -121,7 +121,7 @@
 
 <!-- TAB 2: ADDRESSES -->
 <div id="addresses" class="pane">
-  <div class="section-title">Whale Address Balance Snapshot — 2026-06-20 13:55 UTC</div>
+  <div class="section-title">Whale Address Balance Snapshot — 2026-06-20 15:48 UTC</div>
   <table>
     <thead><tr>
       <th>Rank</th><th>Address</th><th>Label</th>
@@ -268,9 +268,9 @@
           <td>#20</td>
           <td class="mono">1Kr6QSydW9bFQG1mXiPNNu...</td>
           <td style="color:#58a6ff">Huobi</td>
-          <td class="num">5,590.72</td>
-          <td class="num" style="color:#3fb950">+0.3799</td>
-          <td class="num">484,039</td>
+          <td class="num">5,592.72</td>
+          <td class="num" style="color:#3fb950">+1.9993</td>
+          <td class="num">484,043</td>
           <td style="color:#8b949e;font-size:11px">esplora</td>
         </tr>
         <tr>
@@ -413,17 +413,6 @@
           <td class="num" style="color:#8b949e">1,483</td>
           <td style="color:#8b949e">3→2</td>
           <td style="color:#8b949e">954535</td>
-        </tr>
-        <tr>
-          <td class="mono" style="font-size:10px">0cb2b5e0c0b07d67b9...</td>
-          <td class="mono" style="font-size:10px">1Kr6QSydW9bFQG1mXiPN...</td>
-          <td>2026-06-19 15:06</td>
-          <td style="color:#3fb950;font-weight:600">OUT</td>
-          <td class="num" style="color:#d29922;font-weight:600">18.67</td>
-          <td style="color:#58a6ff">—</td>
-          <td class="num" style="color:#8b949e">1,834</td>
-          <td style="color:#8b949e">1→4</td>
-          <td style="color:#8b949e">954408</td>
         </tr></tbody>
   </table>
 </div>
@@ -545,8 +534,8 @@
               <div style="width:50px;color:#8b949e;font-size:10px">▶</div>
             </div>
           </td>
-          <td class="num" style="color:#3fb950">+0.001</td>
-          <td class="num" style="color:#d29922">+0.0001</td>
+          <td class="num" style="color:#3fb950">+0.004</td>
+          <td class="num" style="color:#d29922">+0.0004</td>
         </tr></tbody>
   </table>
 
@@ -568,12 +557,12 @@ const chartOpts = (yMin, yMax) => ({
   }
 });
 
-const labels  = ["14:00", "15:00", "17:00", "19:00", "21:00", "22:00", "00:00", "05:00", "08:00", "11:00", "13:00"];
-const scores  = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-const flows   = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-const inflow  = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-const outflow = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-const syncs   = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+const labels  = ["17:00", "19:00", "21:00", "22:00", "00:00", "05:00", "08:00", "11:00", "13:00", "15:00"];
+const scores  = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+const flows   = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+const inflow  = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+const outflow = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+const syncs   = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
 new Chart(document.getElementById('scoreChart'),{
   type:'line',

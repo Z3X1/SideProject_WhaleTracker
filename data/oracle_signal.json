@@ -1,11 +1,11 @@
 {
   "meta": {
-    "generated_at": "2026-06-20T13:55:09.214289+00:00",
+    "generated_at": "2026-06-20T15:48:07.565762+00:00",
     "version": "signal_bridge_v1.0",
     "framework": "GEX Oracle Unified Field Theory"
   },
   "whale_signal": {
-    "ts": "2026-06-20T13:00:00Z",
+    "ts": "2026-06-20T15:00:00Z",
     "raw_score": 0.0,
     "weighted_score": 0.0,
     "components": {
@@ -25,8 +25,8 @@
         "weight": 0.15
       },
       "balance_delta": {
-        "score": 0.0007598107400008302,
-        "net_btc": 0.37990537000041513,
+        "score": 0.00399851210000088,
+        "net_btc": 1.9992560500004402,
         "weight": 0.1
       }
     },
@@ -44,6 +44,16 @@
   },
   "raw_data": {
     "hourly_summaries": [
+      {
+        "ts": "2026-06-20T15:00:00Z",
+        "signal_score": 0.0,
+        "exchange_inflow": 0.0,
+        "exchange_outflow": 0.0,
+        "net_exchange_flow": 0.0,
+        "sync_event_count": 0,
+        "dormant_wake_count": 0,
+        "top_signal": "NONE"
+      },
       {
         "ts": "2026-06-20T13:00:00Z",
         "signal_score": 0.0,
@@ -63,16 +73,6 @@
         "sync_event_count": 0,
         "dormant_wake_count": 0,
         "top_signal": "NONE"
-      },
-      {
-        "ts": "2026-06-20T08:00:00Z",
-        "signal_score": 0.0,
-        "exchange_inflow": 0.0,
-        "exchange_outflow": 0.0,
-        "net_exchange_flow": 0.0,
-        "sync_event_count": 0,
-        "dormant_wake_count": 0,
-        "top_signal": "NONE"
       }
     ],
     "large_txs": [],
@@ -80,8 +80,8 @@
       {
         "address": "1Kr6QSydW9bFQG1mXiPNNu6WpJGmUa9i1g",
         "label": "Huobi",
-        "balance_btc": 5590.72304816,
-        "balance_delta": 0.37990537000041513,
+        "balance_btc": 5592.72230421,
+        "balance_delta": 1.9992560500004402,
         "rank": 20
       },
       {
