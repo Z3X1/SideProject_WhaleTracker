@@ -1,11 +1,11 @@
 {
   "meta": {
-    "generated_at": "2026-06-20T19:22:34.062566+00:00",
+    "generated_at": "2026-06-20T21:16:24.053140+00:00",
     "version": "signal_bridge_v1.0",
     "framework": "GEX Oracle Unified Field Theory"
   },
   "whale_signal": {
-    "ts": "2026-06-20T19:00:00Z",
+    "ts": "2026-06-20T21:00:00Z",
     "raw_score": 0.0,
     "weighted_score": 0.0,
     "components": {
@@ -25,8 +25,8 @@
         "weight": 0.15
       },
       "balance_delta": {
-        "score": 0.002047276799999963,
-        "net_btc": 1.0236383999999816,
+        "score": 0.0021045406799995066,
+        "net_btc": 1.0522703399997533,
         "weight": 0.1
       }
     },
@@ -44,6 +44,16 @@
   },
   "raw_data": {
     "hourly_summaries": [
+      {
+        "ts": "2026-06-20T21:00:00Z",
+        "signal_score": 0.0,
+        "exchange_inflow": 0.0,
+        "exchange_outflow": 0.0,
+        "net_exchange_flow": 0.0,
+        "sync_event_count": 0,
+        "dormant_wake_count": 0,
+        "top_signal": "NONE"
+      },
       {
         "ts": "2026-06-20T19:00:00Z",
         "signal_score": 0.0,
@@ -63,16 +73,6 @@
         "sync_event_count": 0,
         "dormant_wake_count": 0,
         "top_signal": "NONE"
-      },
-      {
-        "ts": "2026-06-20T15:00:00Z",
-        "signal_score": 0.0,
-        "exchange_inflow": 0.0,
-        "exchange_outflow": 0.0,
-        "net_exchange_flow": 0.0,
-        "sync_event_count": 0,
-        "dormant_wake_count": 0,
-        "top_signal": "NONE"
       }
     ],
     "large_txs": [],
@@ -80,9 +80,16 @@
       {
         "address": "1Kr6QSydW9bFQG1mXiPNNu6WpJGmUa9i1g",
         "label": "Huobi",
-        "balance_btc": 5613.27580203,
-        "balance_delta": 1.0236383999999816,
+        "balance_btc": 5614.32806381,
+        "balance_delta": 1.0522617799997533,
         "rank": 20
+      },
+      {
+        "address": "1NDyJtNTjmwk5xPNhjgAMu4HDHigtobu1s",
+        "label": null,
+        "balance_btc": 0.09148088,
+        "balance_delta": 8.560000000004675e-06,
+        "rank": 28
       },
       {
         "address": "34xp4vRoCGJym3xR7yCVPFHoCNxv4Twseo",
@@ -104,13 +111,6 @@
         "balance_btc": 140849.98536624,
         "balance_delta": 0.0,
         "rank": 3
-      },
-      {
-        "address": "bc1qgdjqv0av3q56jvd82tkdjpy7gdp9ut8tlqmgrpmv24sq90ecnvqqjwvw97",
-        "label": "Bitfinex",
-        "balance_btc": 130010.07900252,
-        "balance_delta": 0.0,
-        "rank": 4
       }
     ]
   }
