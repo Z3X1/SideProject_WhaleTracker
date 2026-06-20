@@ -45,39 +45,28 @@ jobs:
 
       - name: Diagnose API connectivity
         run: |
-          echo "=== API Connectivity Test ==="
           python3 - << 'PYEOF'
           import requests, json, os
-
-          TEST_ADDR = "34xp4vRoCGJym3xR7yCVPFHoCNxv4Twseo"
-
+          TEST = "34xp4vRoCGJym3xR7yCVPFHoCNxv4Twseo"
           apis = {
-              "mempool.space":    f"https://mempool.space/api/address/{TEST_ADDR}",
-              "blockstream.info": f"https://blockstream.info/api/address/{TEST_ADDR}",
-              "blockchain.info":  f"https://blockchain.info/rawaddr/{TEST_ADDR}?limit=1",
-              "bitaps.com":       f"https://api.bitaps.com/btc/v1/blockchain/address/state/{TEST_ADDR}",
-              "sochain.com":      f"https://sochain.com/api/v2/get_address_balance/BTC/{TEST_ADDR}",
+              "mempool.space":    f"https://mempool.space/api/address/{TEST}",
+              "blockstream.info": f"https://blockstream.info/api/address/{TEST}",
+              "blockchain.info":  f"https://blockchain.info/rawaddr/{TEST}?limit=1",
           }
-
           results = {}
           for name, url in apis.items():
               try:
-                  r = requests.get(url, timeout=10, headers={"User-Agent": "GEX-Oracle/2.1"})
+                  r = requests.get(url, timeout=10, headers={"User-Agent": "GEX-Oracle/2.3"})
                   results[name] = r.status_code
-                  icon = "✅" if r.status_code == 200 else "❌"
-                  print(f"  {icon} {name}: HTTP {r.status_code}")
-                  if r.status_code == 200:
-                      d = r.json()
-                      print(f"     sample keys: {list(d.keys())[:5]}")
+                  print(f"  {'✅' if r.status_code==200 else '❌'} {name}: HTTP {r.status_code}")
               except Exception as e:
-                  results[name] = str(e)[:60]
-                  print(f"  ❌ {name}: {str(e)[:60]}")
-
-          working = [k for k, v in results.items() if v == 200]
+                  results[name] = str(e)[:50]
+                  print(f"  ❌ {name}: {str(e)[:50]}")
+          working = [k for k,v in results.items() if v == 200]
           os.makedirs("data", exist_ok=True)
-          with open("data/api_probe.json", "w") as f:
+          with open("data/api_probe.json","w") as f:
               json.dump({"results": results, "working": working}, f, indent=2)
-          print(f"\nWorking APIs: {working}")
+          print(f"Working APIs: {working}")
           PYEOF
 
       - name: Run whale tracker
@@ -88,43 +77,32 @@ jobs:
       - name: Generate Oracle signal
         run: python src/signal_bridge.py
 
+      - name: Generate dashboard (every run)
+        run: python src/daily_report.py
+
       - name: Write job summary
         if: always()
         run: |
           echo "## 🐳 SideProject_WhaleTracker Signal Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Run time**: $(date -u '+%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          if [ -f data/api_probe.json ]; then
-            echo "### API Connectivity" >> $GITHUB_STEP_SUMMARY
-            python3 -c "
-          import json
-          d = json.load(open('data/api_probe.json'))
-          for k, v in d['results'].items():
-              icon = '✅' if v == 200 else '❌'
-              print(f'- {icon} {k}: {v}')
-            " >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-          fi
           if [ -f data/oracle_signal.json ]; then
             SCORE=$(python3 -c "import json; d=json.load(open('data/oracle_signal.json')); print(d['whale_signal']['raw_score'])")
-            TREND=$(python3 -c "import json; d=json.load(open('data/oracle_signal.json')); print(d['whale_signal']['trend'])")
             TRACKED=$(python3 -c "import json; d=json.load(open('data/latest_summary.json')); print(d.get('addresses_tracked',0))")
-            NARRATIVE=$(python3 -c "import json; d=json.load(open('data/oracle_signal.json')); print(d['narrative'])")
+            TXS=$(python3 -c "import json; d=json.load(open('data/latest_summary.json')); print(d.get('tx_records',0))")
             echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
             echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
             echo "| Signal Score | \`${SCORE}\` |" >> $GITHUB_STEP_SUMMARY
-            echo "| Trend | ${TREND} |" >> $GITHUB_STEP_SUMMARY
-            echo "| Addresses Tracked | ${TRACKED} |" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "> ${NARRATIVE}" >> $GITHUB_STEP_SUMMARY
+            echo "| Addresses Tracked | ${TRACKED}/41 |" >> $GITHUB_STEP_SUMMARY
+            echo "| TX Records | ${TXS} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Dashboard | [View](https://z3x1.github.io/SideProject_WhaleTracker/) |" >> $GITHUB_STEP_SUMMARY
           fi
 
-      - name: Commit data updates
+      - name: Commit data + dashboard
         run: |
           git config user.name  "GEX Oracle Bot"
           git config user.email "gex-oracle@noreply.github.com"
           git add data/latest_summary.json data/oracle_signal.json data/api_probe.json 2>/dev/null || true
+          git add docs/ 2>/dev/null || true
           git diff --staged --quiet || git commit -m "chore(data): whale snapshot $(date -u '+%Y-%m-%dT%H:00Z')"
           git push
         env:
@@ -145,36 +123,3 @@ jobs:
               print('✅ No hard triggers')
           "
         continue-on-error: true
-
-  daily-report:
-    name: Daily Whale Behavior Report
-    runs-on: ubuntu-latest
-    if: github.event_name == 'schedule' && startsWith(github.event.schedule, '0 0')
-    needs: collect-and-analyze
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GH_PAT }}
-      - uses: actions/cache@v4
-        with:
-          path: data/whale.db
-          key: whale-db-${{ github.run_number }}
-          restore-keys: |
-            whale-db-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          cache: 'pip'
-      - run: pip install -r requirements.txt
-      - run: python src/daily_report.py
-      - name: Commit daily report
-        run: |
-          git config user.name  "GEX Oracle Bot"
-          git config user.email "gex-oracle@noreply.github.com"
-          DATE=$(date -u '+%Y-%m-%d')
-          git add "data/daily_${DATE}.json" dashboard/whale_dashboard.html 2>/dev/null || true
-          git diff --staged --quiet || git commit -m "feat(report): daily whale report ${DATE}"
-          git push
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
