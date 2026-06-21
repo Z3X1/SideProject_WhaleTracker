@@ -1,13 +1,13 @@
 {
   "meta": {
-    "generated_at": "2026-06-20T23:07:27.411921+00:00",
+    "generated_at": "2026-06-21T03:40:41.586302+00:00",
     "version": "signal_bridge_v1.0",
     "framework": "GEX Oracle Unified Field Theory"
   },
   "whale_signal": {
-    "ts": "2026-06-20T23:00:00Z",
-    "raw_score": -0.014,
-    "weighted_score": -0.0039,
+    "ts": "2026-06-21T03:00:00Z",
+    "raw_score": -0.0,
+    "weighted_score": -0.0,
     "components": {
       "exchange_flow": {
         "score": 0.0,
@@ -25,14 +25,14 @@
         "weight": 0.15
       },
       "balance_delta": {
-        "score": -0.1371937567399982,
-        "net_btc": -68.5968783699991,
+        "score": -0.003884533160000501,
+        "net_btc": -1.9422665800002505,
         "weight": 0.1
       }
     },
-    "trend": "STABLE",
+    "trend": "INSUFFICIENT_DATA",
     "hard_triggers": [],
-    "confidence": 0.3,
+    "confidence": 0.22,
     "large_tx_count": 1,
     "largest_tx": {
       "txid": "33b7595341d63b13...",
@@ -43,36 +43,26 @@
       "counterparty": null
     }
   },
-  "narrative": "Whale behavior neutral: -0.014 \u2014 no clear directional signal",
+  "narrative": "Whale behavior neutral: -0.000 \u2014 no clear directional signal",
   "oracle_input": {
-    "behavior_component": -0.0039,
+    "behavior_component": -0.0,
     "hard_triggers": [],
-    "confidence": 0.3
+    "confidence": 0.22
   },
   "raw_data": {
     "hourly_summaries": [
       {
+        "ts": "2026-06-21T03:00:00Z",
+        "signal_score": 0.0,
+        "exchange_inflow": 0.0,
+        "exchange_outflow": 0.0,
+        "net_exchange_flow": 0.0,
+        "sync_event_count": 0,
+        "dormant_wake_count": 0,
+        "top_signal": "NONE"
+      },
+      {
         "ts": "2026-06-20T23:00:00Z",
-        "signal_score": 0.0,
-        "exchange_inflow": 0.0,
-        "exchange_outflow": 0.0,
-        "net_exchange_flow": 0.0,
-        "sync_event_count": 0,
-        "dormant_wake_count": 0,
-        "top_signal": "NONE"
-      },
-      {
-        "ts": "2026-06-20T21:00:00Z",
-        "signal_score": 0.0,
-        "exchange_inflow": 0.0,
-        "exchange_outflow": 0.0,
-        "net_exchange_flow": 0.0,
-        "sync_event_count": 0,
-        "dormant_wake_count": 0,
-        "top_signal": "NONE"
-      },
-      {
-        "ts": "2026-06-20T19:00:00Z",
         "signal_score": 0.0,
         "exchange_inflow": 0.0,
         "exchange_outflow": 0.0,
@@ -96,8 +86,8 @@
       {
         "address": "1Kr6QSydW9bFQG1mXiPNNu6WpJGmUa9i1g",
         "label": "Huobi",
-        "balance_btc": 5545.73118544,
-        "balance_delta": -68.5968783699991,
+        "balance_btc": 5543.78891886,
+        "balance_delta": -1.9422665800002505,
         "rank": 20
       },
       {
