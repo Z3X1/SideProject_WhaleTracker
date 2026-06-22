@@ -1,13 +1,13 @@
 {
   "meta": {
-    "generated_at": "2026-06-22T09:49:27.297805+00:00",
+    "generated_at": "2026-06-22T15:25:11.619989+00:00",
     "version": "signal_bridge_v1.0",
     "framework": "GEX Oracle Unified Field Theory"
   },
   "whale_signal": {
-    "ts": "2026-06-22T09:00:00Z",
-    "raw_score": -0.017,
-    "weighted_score": -0.0048,
+    "ts": "2026-06-22T15:00:00Z",
+    "raw_score": -0.008,
+    "weighted_score": -0.0022,
     "components": {
       "exchange_flow": {
         "score": 0.0,
@@ -25,8 +25,8 @@
         "weight": 0.15
       },
       "balance_delta": {
-        "score": -0.17428474760000062,
-        "net_btc": -87.14237380000031,
+        "score": -0.07813750665999941,
+        "net_btc": -39.06875332999971,
         "weight": 0.1
       }
     },
@@ -36,16 +36,16 @@
     "large_tx_count": 0,
     "largest_tx": null
   },
-  "narrative": "Whale behavior neutral: -0.017 \u2014 no clear directional signal",
+  "narrative": "Whale behavior neutral: -0.008 \u2014 no clear directional signal",
   "oracle_input": {
-    "behavior_component": -0.0048,
+    "behavior_component": -0.0022,
     "hard_triggers": [],
     "confidence": 0.08
   },
   "raw_data": {
     "hourly_summaries": [
       {
-        "ts": "2026-06-22T09:00:00Z",
+        "ts": "2026-06-22T15:00:00Z",
         "signal_score": 0.0,
         "exchange_inflow": 0.0,
         "exchange_outflow": 0.0,
@@ -60,8 +60,8 @@
       {
         "address": "1Kr6QSydW9bFQG1mXiPNNu6WpJGmUa9i1g",
         "label": "Huobi",
-        "balance_btc": 5413.15433734,
-        "balance_delta": -87.14237380000031,
+        "balance_btc": 5374.08558401,
+        "balance_delta": -39.06875332999971,
         "rank": 20
       },
       {
