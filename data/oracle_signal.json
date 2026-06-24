@@ -1,13 +1,13 @@
 {
   "meta": {
-    "generated_at": "2026-06-24T10:23:26.903766+00:00",
+    "generated_at": "2026-06-24T13:20:50.859964+00:00",
     "version": "signal_bridge_v1.0",
     "framework": "GEX Oracle Unified Field Theory"
   },
   "whale_signal": {
-    "ts": "2026-06-24T10:00:00Z",
-    "raw_score": -0.007,
-    "weighted_score": -0.002,
+    "ts": "2026-06-24T13:00:00Z",
+    "raw_score": 0.009,
+    "weighted_score": 0.0025,
     "components": {
       "exchange_flow": {
         "score": 0.0,
@@ -25,8 +25,8 @@
         "weight": 0.15
       },
       "balance_delta": {
-        "score": -0.06502860529999999,
-        "net_btc": -32.51430264999999,
+        "score": 0.09377040282004419,
+        "net_btc": 46.88520141002209,
         "weight": 0.1
       }
     },
@@ -36,16 +36,16 @@
     "large_tx_count": 0,
     "largest_tx": null
   },
-  "narrative": "Whale behavior neutral: -0.007 \u2014 no clear directional signal",
+  "narrative": "Whale behavior neutral: +0.009 \u2014 no clear directional signal",
   "oracle_input": {
-    "behavior_component": -0.002,
+    "behavior_component": 0.0025,
     "hard_triggers": [],
     "confidence": 0.17
   },
   "raw_data": {
     "hourly_summaries": [
       {
-        "ts": "2026-06-24T10:00:00Z",
+        "ts": "2026-06-24T13:00:00Z",
         "signal_score": 0.0,
         "exchange_inflow": 0.0,
         "exchange_outflow": 0.0,
@@ -55,7 +55,7 @@
         "top_signal": "NONE"
       },
       {
-        "ts": "2026-06-24T06:00:00Z",
+        "ts": "2026-06-24T10:00:00Z",
         "signal_score": 0.0,
         "exchange_inflow": 0.0,
         "exchange_outflow": 0.0,
@@ -70,15 +70,22 @@
       {
         "address": "1Kr6QSydW9bFQG1mXiPNNu6WpJGmUa9i1g",
         "label": "Huobi",
-        "balance_btc": 5363.42023972,
-        "balance_delta": -32.51430264999999,
+        "balance_btc": 5410.30543022,
+        "balance_delta": 46.885190500000135,
         "rank": 20
+      },
+      {
+        "address": "1FeexV6bAHb8ybZjqQMjJrcCrHGW9sb6uF",
+        "label": "MtGox_Hacker",
+        "balance_btc": 79957.26863304,
+        "balance_delta": 5.460009560920298e-06,
+        "rank": 8
       },
       {
         "address": "34xp4vRoCGJym3xR7yCVPFHoCNxv4Twseo",
         "label": "Binance",
-        "balance_btc": 248597.59055983,
-        "balance_delta": 0.0,
+        "balance_btc": 248597.59056528,
+        "balance_delta": 5.45001239515841e-06,
         "rank": 1
       },
       {
@@ -94,13 +101,6 @@
         "balance_btc": 140849.98536624,
         "balance_delta": 0.0,
         "rank": 3
-      },
-      {
-        "address": "bc1qgdjqv0av3q56jvd82tkdjpy7gdp9ut8tlqmgrpmv24sq90ecnvqqjwvw97",
-        "label": "Bitfinex",
-        "balance_btc": 130010.07900252,
-        "balance_delta": 0.0,
-        "rank": 4
       }
     ]
   }
