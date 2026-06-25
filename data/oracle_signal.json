@@ -1,13 +1,13 @@
 {
   "meta": {
-    "generated_at": "2026-06-25T00:10:06.085002+00:00",
+    "generated_at": "2026-06-25T05:05:35.822927+00:00",
     "version": "signal_bridge_v1.0",
     "framework": "GEX Oracle Unified Field Theory"
   },
   "whale_signal": {
-    "ts": "2026-06-25T00:00:00Z",
-    "raw_score": 0.019,
-    "weighted_score": 0.0053,
+    "ts": "2026-06-25T05:00:00Z",
+    "raw_score": -0.01,
+    "weighted_score": -0.0028,
     "components": {
       "exchange_flow": {
         "score": 0.0,
@@ -25,54 +25,44 @@
         "weight": 0.15
       },
       "balance_delta": {
-        "score": 0.18806056757999978,
-        "net_btc": 94.03028378999988,
+        "score": -0.09875274413999978,
+        "net_btc": -49.37637206999989,
         "weight": 0.1
       }
     },
-    "trend": "STABLE",
+    "trend": "INSUFFICIENT_DATA",
     "hard_triggers": [],
-    "confidence": 0.45,
-    "large_tx_count": 4,
+    "confidence": 0.22,
+    "large_tx_count": 1,
     "largest_tx": {
-      "txid": "d5d6dfd848bbe68f...",
+      "txid": "075d0552575a06d5...",
       "address": "1Kr6QSydW9bFQG1m...",
-      "ts_block": null,
-      "direction": "in",
-      "value_btc": 344.69989004,
+      "ts_block": "2026-06-25T04:58:21+00:00",
+      "direction": "out",
+      "value_btc": 103.83579032000011,
       "counterparty": null
     }
   },
-  "narrative": "Whale behavior neutral: +0.019 \u2014 no clear directional signal",
+  "narrative": "Whale behavior neutral: -0.010 \u2014 no clear directional signal",
   "oracle_input": {
-    "behavior_component": 0.0053,
+    "behavior_component": -0.0028,
     "hard_triggers": [],
-    "confidence": 0.45
+    "confidence": 0.22
   },
   "raw_data": {
     "hourly_summaries": [
       {
+        "ts": "2026-06-25T05:00:00Z",
+        "signal_score": 0.0,
+        "exchange_inflow": 0.0,
+        "exchange_outflow": 0.0,
+        "net_exchange_flow": 0.0,
+        "sync_event_count": 0,
+        "dormant_wake_count": 0,
+        "top_signal": "NONE"
+      },
+      {
         "ts": "2026-06-25T00:00:00Z",
-        "signal_score": 0.0,
-        "exchange_inflow": 0.0,
-        "exchange_outflow": 0.0,
-        "net_exchange_flow": 0.0,
-        "sync_event_count": 0,
-        "dormant_wake_count": 0,
-        "top_signal": "NONE"
-      },
-      {
-        "ts": "2026-06-24T22:00:00Z",
-        "signal_score": 0.0,
-        "exchange_inflow": 0.0,
-        "exchange_outflow": 0.0,
-        "net_exchange_flow": 0.0,
-        "sync_event_count": 0,
-        "dormant_wake_count": 0,
-        "top_signal": "NONE"
-      },
-      {
-        "ts": "2026-06-24T20:00:00Z",
         "signal_score": 0.0,
         "exchange_inflow": 0.0,
         "exchange_outflow": 0.0,
@@ -84,35 +74,11 @@
     ],
     "large_txs": [
       {
-        "txid": "d5d6dfd848bbe68f...",
+        "txid": "075d0552575a06d5...",
         "address": "1Kr6QSydW9bFQG1m...",
-        "ts_block": null,
-        "direction": "in",
-        "value_btc": 344.69989004,
-        "counterparty": null
-      },
-      {
-        "txid": "bb2deb96093ae4a5...",
-        "address": "1Kr6QSydW9bFQG1m...",
-        "ts_block": "2026-06-24T18:33:03+00:00",
+        "ts_block": "2026-06-25T04:58:21+00:00",
         "direction": "out",
-        "value_btc": 153.5230909500001,
-        "counterparty": null
-      },
-      {
-        "txid": "931de8683b6cd432...",
-        "address": "1Kr6QSydW9bFQG1m...",
-        "ts_block": "2026-06-24T21:42:21+00:00",
-        "direction": "out",
-        "value_btc": 139.05718488000002,
-        "counterparty": null
-      },
-      {
-        "txid": "fd82bce451bb50a7...",
-        "address": "1Kr6QSydW9bFQG1m...",
-        "ts_block": "2026-06-24T20:40:40+00:00",
-        "direction": "out",
-        "value_btc": 101.78330163999999,
+        "value_btc": 103.83579032000011,
         "counterparty": null
       }
     ],
@@ -120,8 +86,8 @@
       {
         "address": "1Kr6QSydW9bFQG1mXiPNNu6WpJGmUa9i1g",
         "label": "Huobi",
-        "balance_btc": 5846.34809032,
-        "balance_delta": 94.03028378999988,
+        "balance_btc": 5796.97171825,
+        "balance_delta": -49.37637206999989,
         "rank": 20
       },
       {
