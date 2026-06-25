@@ -1,12 +1,11 @@
 {
   "results": {
     "mempool.space": 200,
-    "blockstream.info": 200,
+    "blockstream.info": "HTTPSConnectionPool(host='blockstream.info', port=",
     "blockchain.info": 200
   },
   "working": [
     "mempool.space",
-    "blockstream.info",
     "blockchain.info"
   ]
 }
