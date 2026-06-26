@@ -1,13 +1,13 @@
 {
   "meta": {
-    "generated_at": "2026-06-26T16:16:47.394771+00:00",
+    "generated_at": "2026-06-26T18:32:09.400699+00:00",
     "version": "signal_bridge_v1.0",
     "framework": "GEX Oracle Unified Field Theory"
   },
   "whale_signal": {
-    "ts": "2026-06-26T16:00:00Z",
-    "raw_score": -0.023,
-    "weighted_score": -0.0064,
+    "ts": "2026-06-26T18:00:00Z",
+    "raw_score": -0.006,
+    "weighted_score": -0.0017,
     "components": {
       "exchange_flow": {
         "score": 0.0,
@@ -25,25 +25,35 @@
         "weight": 0.15
       },
       "balance_delta": {
-        "score": -0.22997696349999933,
-        "net_btc": -114.98848174999966,
+        "score": -0.06338273350000054,
+        "net_btc": -31.69136675000027,
         "weight": 0.1
       }
     },
-    "trend": "INSUFFICIENT_DATA",
+    "trend": "STABLE",
     "hard_triggers": [],
-    "confidence": 0.17,
+    "confidence": 0.25,
     "large_tx_count": 0,
     "largest_tx": null
   },
-  "narrative": "Whale behavior neutral: -0.023 \u2014 no clear directional signal",
+  "narrative": "Whale behavior neutral: -0.006 \u2014 no clear directional signal",
   "oracle_input": {
-    "behavior_component": -0.0064,
+    "behavior_component": -0.0017,
     "hard_triggers": [],
-    "confidence": 0.17
+    "confidence": 0.25
   },
   "raw_data": {
     "hourly_summaries": [
+      {
+        "ts": "2026-06-26T18:00:00Z",
+        "signal_score": 0.0,
+        "exchange_inflow": 0.0,
+        "exchange_outflow": 0.0,
+        "net_exchange_flow": 0.0,
+        "sync_event_count": 0,
+        "dormant_wake_count": 0,
+        "top_signal": "NONE"
+      },
       {
         "ts": "2026-06-26T16:00:00Z",
         "signal_score": 0.0,
@@ -70,8 +80,8 @@
       {
         "address": "1Kr6QSydW9bFQG1mXiPNNu6WpJGmUa9i1g",
         "label": "Huobi",
-        "balance_btc": 5803.74681363,
-        "balance_delta": -114.98848174999966,
+        "balance_btc": 5772.05544688,
+        "balance_delta": -31.69136675000027,
         "rank": 20
       },
       {
