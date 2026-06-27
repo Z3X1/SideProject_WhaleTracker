@@ -482,30 +482,33 @@ UFT計算結果：
 
 def generate_html(data, uft_result, collision, snapshot_num):
     import math, json as _json
+    from datetime import datetime, timezone
 
     spot    = float(data.get("spot") or 0)
     fr      = float(data.get("fr") or 0) * 100
     oi      = float(data.get("oi") or 0)
-    ls      = float(data.get("ls") or 0)
     dvol    = float(data.get("dvol") or 0)
     ts      = str(data.get("timestamp",""))[:16].replace("T"," ")
     expiries = data.get("expiries", ["3JUL26","31JUL26","25SEP26"])
+    exp0 = expiries[0] if len(expiries)>0 else "N/A"
+    exp1 = expiries[1] if len(expiries)>1 else "N/A"
+    exp2 = expiries[2] if len(expiries)>2 else "N/A"
 
     uft_med  = float(uft_result.get("uft_median") or spot)
     uft_mode = float(uft_result.get("uft_mode") or spot)
     sigma    = float(uft_result.get("sigma") or 0)
     contra   = bool(uft_result.get("behavior_contradiction", False))
     comps    = uft_result.get("components", {})
-    gex      = uft_result.get("gex", {})
-    pcr_main = float(gex.get("pcr") or 1.0)
+    regime   = uft_result.get("regime", "POS")
+    gf_main  = int(uft_result.get("gamma_flip", uft_mode) or uft_mode)
+    skew_main = float(uft_result.get("skew_main") or 0)
+    weights  = data.get("uft_weights", {"gbm":0.40,"gex":0.10,"behavior":0.28,"bayesian":0.12,"timedecay":0.10})
 
     def mstat(key_flat, key_nested):
         m = data.get(key_flat) or data.get("macd",{}).get(key_nested,{})
         dif = float(m.get("dif",0)); dea = float(m.get("dea",0)); mac = float(m.get("macd",0))
         bull = dif > dea
-        col = "#10b981" if bull else "#ef4444"
-        sig = "BULL X" if bull else "BEAR X"
-        return sig, col, dif, dea, mac
+        return ("BULL X" if bull else "BEAR X"), ("#10b981" if bull else "#ef4444"), dif, dea, mac
 
     s15,c15,d15,e15,m15 = mstat("macd_15m","15m")
     s4h,c4h,d4h,e4h,m4h = mstat("macd_4h","4h")
@@ -513,73 +516,143 @@ def generate_html(data, uft_result, collision, snapshot_num):
 
     fr_col  = "#10b981" if fr >= 0 else "#ef4444"
     fr_sign = "+" if fr >= 0 else ""
-
-    r15_txt = "Rule#15 CLEARED - Signal consistent, full weight" if not contra else "Rule#15 TRIGGERED - Contradictory signal, x0.5 weight"
+    regime_col = "#10b981" if regime == "POS" else "#ef4444"
+    r15_txt = "Rule#15 CLEARED - full weight" if not contra else "Rule#15 TRIGGERED - x0.5 weight"
     r15_col = "#10b981" if not contra else "#f59e0b"
 
     oracle_txt  = collision.get("oracle_verdict","N/A") if collision else "N/A"
     insight_txt = collision.get("key_insight","Claude API not configured") if collision else "Claude API not configured"
     next_trig   = collision.get("next_trigger","") if collision else ""
 
-    exp0 = expiries[0] if len(expiries)>0 else "N/A"
-    exp1 = expiries[1] if len(expiries)>1 else "N/A"
-    exp2 = expiries[2] if len(expiries)>2 else "N/A"
-
-    # 預計算Skew值（避免HTML裡複雜f-string）
-    skew0 = data.get("skew", {}).get(exp0)
-    skew1 = data.get("skew", {}).get(exp1)
-    skew0_str = f"{skew0:+.1f}%" if skew0 is not None else "N/A"
-    skew1_str = f"{skew1:+.1f}%" if skew1 is not None else "N/A"
-    skew0_col = "#ef4444" if (skew0 or 0) > 2 else ("#10b981" if (skew0 or 0) < -2 else "var(--mut)")
-    gf_val = int(uft_result.get("gamma_flip", uft_mode))
-    regime_val = uft_result.get("regime", "POS")
-    regime_col = "#10b981" if regime_val == "POS" else "#ef4444"
-
+    # Options stats
     opts = data.get("options",{})
+    skews = data.get("skew", {})
+    gflips = data.get("gamma_flip", {})
+
     def opt_stats(exp):
         o = opts.get(exp,{})
         if not o: return 0,0,0,0,0
         tc = sum(float(v.get("call_oi",0)) for v in o.values())
         tp = sum(float(v.get("put_oi",0)) for v in o.values())
         pcr = round(tp/tc,3) if tc>0 else 0
-        max_call = max(o.items(), key=lambda x: x[1].get("call_oi",0), default=(0,{}))
-        max_put  = max(o.items(), key=lambda x: x[1].get("put_oi",0), default=(0,{}))
-        return tc, tp, pcr, int(max_call[0]), int(max_put[0])
+        mc = max(o.items(), key=lambda x: x[1].get("call_oi",0), default=(0,{}))
+        mp = max(o.items(), key=lambda x: x[1].get("put_oi",0), default=(0,{}))
+        return tc, tp, pcr, int(mc[0]), int(mp[0])
 
     tc0,tp0,pcr0,cw0,pw0 = opt_stats(exp0)
     tc1,tp1,pcr1,cw1,pw1 = opt_stats(exp1)
     tc2,tp2,pcr2,cw2,pw2 = opt_stats(exp2)
 
-    # Scenario probabilities (UFT-based)
+    sk0 = skews.get(exp0); sk1 = skews.get(exp1); sk2 = skews.get(exp2)
+    sk0_str = f"{sk0:+.1f}%" if sk0 is not None else "N/A"
+    sk1_str = f"{sk1:+.1f}%" if sk1 is not None else "N/A"
+    sk2_str = f"{sk2:+.1f}%" if sk2 is not None else "N/A"
+    sk0_col = "#ef4444" if (sk0 or 0)>2 else ("#10b981" if (sk0 or 0)<-2 else "var(--mut)")
+    sk1_col = "#ef4444" if (sk1 or 0)>2 else ("#10b981" if (sk1 or 0)<-2 else "var(--mut)")
+    sk2_col = "#ef4444" if (sk2 or 0)>2 else ("#10b981" if (sk2 or 0)<-2 else "var(--mut)")
+    gf0 = gflips.get(exp0, gf_main); gf1 = gflips.get(exp1, 0); gf2 = gflips.get(exp2, 0)
+
+    # Scenario probabilities
     if sigma > 0:
-        # P(>+1sigma), P(+0.5 to +1), P(-0.5 to +0.5), P(-1 to -0.5), P(<-1)
-        import math
-        def norm_cdf(x):
-            return 0.5 * (1 + math.erf(x / math.sqrt(2)))
-        center = uft_med
-        p_A = round((1 - norm_cdf((center+sigma*0.5 - spot)/sigma))*100, 1)   # >+0.5s
-        p_B = round((norm_cdf((center+sigma*0.5 - spot)/sigma) - norm_cdf((center-sigma*0.5 - spot)/sigma))*100, 1)  # core
-        p_C = round((norm_cdf((center-sigma*0.5 - spot)/sigma) - norm_cdf((center-sigma - spot)/sigma))*100, 1)
-        p_D = round(norm_cdf((center-sigma - spot)/sigma)*100, 1)
+        def ncdf(x): return 0.5*(1+math.erf(x/math.sqrt(2)))
+        c = uft_med
+        p_A = round((1-ncdf((c+sigma*0.5-spot)/sigma))*100,1)
+        p_B = round((ncdf((c+sigma*0.5-spot)/sigma)-ncdf((c-sigma*0.5-spot)/sigma))*100,1)
+        p_C = round((ncdf((c-sigma*0.5-spot)/sigma)-ncdf((c-sigma-spot)/sigma))*100,1)
+        p_D = round(ncdf((c-sigma-spot)/sigma)*100,1)
     else:
         p_A,p_B,p_C,p_D = 20,50,20,10
 
-    # Top 5 strikes by OI for main expiry
+    # Countdown to exp0
+    months = {"JAN":1,"FEB":2,"MAR":3,"APR":4,"MAY":5,"JUN":6,
+              "JUL":7,"AUG":8,"SEP":9,"OCT":10,"NOV":11,"DEC":12}
+    try:
+        import re
+        m = re.match(r"(\d+)([A-Z]+)(\d+)", exp0)
+        if m:
+            from datetime import date, timedelta
+            exp_date = date(2000+int(m.group(3)), months[m.group(2)], int(m.group(1)))
+            today = date.today()
+            days_left = (exp_date - today).days
+            countdown_str = f"T-{days_left}d" if days_left > 0 else "EXPIRY TODAY"
+        else:
+            countdown_str = ""
+    except:
+        countdown_str = ""
+
+    # Settlement log
+    settlement_html = ""
+    try:
+        import os
+        log_path = "data/settlement_log.json"
+        if os.path.exists(log_path):
+            with open(log_path) as f:
+                log = _json.load(f)
+            records = log.get("records", [])[-8:]  # last 8
+            rows = ""
+            for rec in reversed(records):
+                snum = rec.get("snapshot_num","?")
+                exp = rec.get("expiry","")
+                pred = rec.get("predicted_median",0)
+                actual = rec.get("actual_settlement")
+                err_s = rec.get("error_sigma")
+                if actual:
+                    err_str = f"${abs(actual-pred):,.0f} ({err_s:.2f}s)" if err_s else f"${abs(actual-pred):,.0f}"
+                    err_col = "#10b981" if (err_s or 99) < 0.5 else ("#f59e0b" if (err_s or 99) < 1.0 else "#ef4444")
+                    actual_str = f"${actual:,.0f}"
+                else:
+                    err_str = "pending"
+                    err_col = "var(--mut)"
+                    actual_str = "-"
+                rows += f'<tr><td>S{snum}</td><td>{exp}</td><td>${pred:,.0f}</td><td>{actual_str}</td><td style="color:{err_col}">{err_str}</td></tr>'
+            if rows:
+                settlement_html = f'''
+<div style="padding:0 10px 10px">
+<div class="card">
+<div class="ct">SETTLEMENT LOG - UFT Accuracy Tracker</div>
+<table>
+<thead><tr><th>S#</th><th>Expiry</th><th>Predicted</th><th>Actual</th><th>Error</th></tr></thead>
+<tbody>{rows}</tbody>
+</table>
+<div style="font-size:9px;color:var(--mut);margin-top:6px">Optimizer: {len([r for r in log.get("records",[]) if r.get("actual_settlement")])}/10 samples for weight optimization</div>
+</div>
+</div>'''
+    except: pass
+
+    # Active Rules
+    rules_triggered = []
+    if contra: rules_triggered.append("R#15 Contradictory signal")
+    if regime == "NEG": rules_triggered.append("R#10 NEG Regime - MM Amplifier")
+    if fr > 0.005: rules_triggered.append("R#5 FR bullish (>0.005%)")
+    elif fr < -0.005: rules_triggered.append("R#5 FR bearish (<-0.005%)")
+    if (sk0 or 0) > 5: rules_triggered.append(f"R#Skew Strong bearish skew +{sk0:.1f}%")
+    if spot > gf_main: rules_triggered.append(f"R#10 POS Regime (Spot above GF ${gf_main:,})")
+    rules_html = "".join(f'<div style="font-size:9px;padding:2px 0;border-bottom:1px solid var(--border)">{r}</div>' for r in rules_triggered) if rules_triggered else '<div style="font-size:9px;color:var(--mut)">No major rules triggered</div>'
+
+    # Time since last update
+    try:
+        from datetime import datetime, timezone
+        last_ts = datetime.fromisoformat(data.get("timestamp","").replace("Z","+00:00"))
+        now = datetime.now(timezone.utc)
+        mins_ago = int((now - last_ts).total_seconds() / 60)
+        age_str = f"{mins_ago}m ago" if mins_ago < 60 else f"{mins_ago//60}h {mins_ago%60}m ago"
+        age_col = "var(--green)" if mins_ago < 30 else ("var(--yel)" if mins_ago < 120 else "var(--red)")
+    except:
+        age_str = "unknown"; age_col = "var(--mut)"
+
+    # Options chain top strikes
     strike_rows = ""
     o0 = opts.get(exp0,{})
     if o0:
-        top5 = sorted(o0.items(), key=lambda x: x[1].get("call_oi",0)+x[1].get("put_oi",0), reverse=True)[:8]
-        for strike, v in sorted(top5, key=lambda x: x[0]):
-            c_oi = float(v.get("call_oi",0))
-            p_oi = float(v.get("put_oi",0))
+        top8 = sorted(o0.items(), key=lambda x: x[1].get("call_oi",0)+x[1].get("put_oi",0), reverse=True)[:8]
+        for strike, v in sorted(top8, key=lambda x: x[0]):
+            c_oi = float(v.get("call_oi",0)); p_oi = float(v.get("put_oi",0))
             pcr_s = round(p_oi/c_oi,2) if c_oi>0 else 0
-            atm = " style=\"background:rgba(59,130,246,.08)\"" if abs(int(strike)-spot)<1500 else ""
-            strike_rows += f"<tr{atm}><td>${int(strike):,}</td><td>{c_oi:.0f}</td><td>{p_oi:.0f}</td><td>{pcr_s}</td></tr>"
+            atm = ' style="background:rgba(59,130,246,.08)"' if abs(int(strike)-spot)<1500 else ""
+            gf_mark = " *GF*" if abs(int(strike)-gf_main) < 500 else ""
+            strike_rows += f'<tr{atm}><td>${int(strike):,}{gf_mark}</td><td>{c_oi:.0f}</td><td>{p_oi:.0f}</td><td>{pcr_s}</td></tr>'
 
-    # UFT weights display
-    weights = data.get("uft_weights", {"gbm":0.40,"gex":0.10,"behavior":0.28,"bayesian":0.12,"timedecay":0.10})
-    beh_w = weights.get("behavior",0.28)
-    if contra: beh_w = beh_w * 0.5
+    beh_w = float(weights.get("behavior",0.28)) * (0.5 if contra else 1.0)
 
     html = """<!DOCTYPE html>
 <html lang="en">
@@ -608,7 +681,7 @@ body{background:var(--bg);color:var(--txt);font-family:Consolas,monospace;font-s
 .row:last-child{border-bottom:none}
 .big{font-size:20px;font-weight:bold;color:var(--yel);text-align:center;padding:6px 0}
 .sm{color:var(--mut);font-size:9px;text-align:center}
-.pb{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin:3px 0}
+.pb{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin:2px 0 4px}
 .pf{height:100%;border-radius:4px}
 table{width:100%;border-collapse:collapse;font-size:10px}
 th{color:var(--mut);text-align:right;padding:3px 5px;font-size:9px;border-bottom:1px solid var(--border)}
@@ -616,6 +689,7 @@ th:first-child{text-align:center}
 td{padding:3px 5px;text-align:right;border-bottom:1px solid rgba(30,41,59,.5)}
 td:first-child{text-align:center;font-weight:bold;color:var(--cyan)}
 .foot{text-align:center;padding:8px;color:var(--mut);font-size:9px}
+.skew-bar{height:6px;border-radius:3px;margin-top:2px}
 </style>
 </head>
 <body>
@@ -623,37 +697,34 @@ td:first-child{text-align:center;font-weight:bold;color:var(--cyan)}
 <div class="hdr">
   <div>
     <div class="ht">GEX ORACLE AUTO S""" + str(snapshot_num) + """</div>
-    <div class="hs">UFT v2.0 | """ + ts + """ UTC | 6h auto</div>
+    <div class="hs">UFT v2.0 | """ + ts + """ UTC | 6h auto | <span style="color:""" + age_col + """">updated """ + age_str + """</span></div>
   </div>
   <div style="text-align:right">
-    <div style="font-size:9px;color:var(--mut)">BTC/USDT PERP</div>
+    <div style="font-size:9px;color:var(--mut)">BTC/USDT PERP | Regime: <span style="color:""" + regime_col + """;font-weight:bold">""" + regime + """</span> | GF: $""" + f"{gf_main:,}" + """ | """ + countdown_str + """</div>
     <div class="spot">$""" + f"{spot:,.0f}" + """</div>
     <div style="font-size:10px;color:""" + fr_col + """">FR """ + fr_sign + f"{fr:.5f}" + """% | DVOL """ + f"{dvol:.2f}" + """%</div>
   </div>
 </div>
 
 <div class="al" style="background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.4);margin-top:8px">
-  Oracle: <strong>""" + oracle_txt + """</strong> | sigma=""" + f"${sigma:,.0f}" + """ | UFT Median=<strong>$""" + f"{uft_med:,.0f}" + """</strong>
+  Oracle: <strong>""" + oracle_txt + """</strong> | sigma=$""" + f"{sigma:,.0f}" + """ | UFT Median=<strong>$""" + f"{uft_med:,.0f}" + """</strong>
 </div>
-<div class="al" style="background:rgba(245,158,11,.08);border:1px solid """ + r15_col + """">
-  """ + r15_txt + """
-</div>
+<div class="al" style="background:rgba(245,158,11,.08);border:1px solid """ + r15_col + """">""" + r15_txt + """</div>
 
 <div class="g4">
   <div class="card"><div class="kv" style="color:var(--yel)">$""" + f"{spot:,.0f}" + """</div><div class="kl">SPOT</div></div>
   <div class="card"><div class="kv" style="color:""" + fr_col + """">""" + fr_sign + f"{fr:.5f}" + """%</div><div class="kl">FUNDING RATE</div></div>
-  <div class="card"><div class="kv" style="color:__SKEW0_COL__">__SKEW0_STR__</div><div class="kl">SKEW (__EXP0__)</div></div>
+  <div class="card"><div class="kv" style="color:""" + sk0_col + """">__SKEW0_STR__</div><div class="kl">SKEW (__EXP0__)</div></div>
   <div class="card"><div class="kv" style="color:var(--mut)">""" + f"{oi:.2f}" + """w</div><div class="kl">OPEN INTEREST</div></div>
 </div>
 
 <div class="g3">
   <div class="card">
     <div class="ct">MACD (3 Timeframes)</div>
-    <div class="row"><span style="color:var(--cyan)">15m (30%)</span><span style="color:""" + c15 + """">""" + s15 + """ """ + f"{m15:+.2f}" + """</span><span style="color:var(--mut)">""" + f"{d15:+.0f}" + """</span></div>
-    <div class="row"><span style="color:var(--cyan)">4h (62%)</span><span style="color:""" + c4h + """">""" + s4h + """ """ + f"{m4h:+.2f}" + """</span><span style="color:var(--mut)">""" + f"{d4h:+.0f}" + """</span></div>
-    <div class="row"><span style="color:var(--cyan)">1D (70%)</span><span style="color:""" + c1d + """">""" + s1d + """ """ + f"{m1d:+.2f}" + """</span><span style="color:var(--mut)">""" + f"{d1d:+.0f}" + """</span></div>
+    <div class="row"><span style="color:var(--cyan)">15m (30%)</span><span style="color:""" + c15 + """">""" + s15 + " " + f"{m15:+.2f}" + """</span><span style="color:var(--mut)">""" + f"{d15:+.0f}" + """</span></div>
+    <div class="row"><span style="color:var(--cyan)">4h (62%)</span><span style="color:""" + c4h + """">""" + s4h + " " + f"{m4h:+.2f}" + """</span><span style="color:var(--mut)">""" + f"{d4h:+.0f}" + """</span></div>
+    <div class="row"><span style="color:var(--cyan)">1D (70%)</span><span style="color:""" + c1d + """">""" + s1d + " " + f"{m1d:+.2f}" + """</span><span style="color:var(--mut)">""" + f"{d1d:+.0f}" + """</span></div>
   </div>
-
   <div class="card">
     <div class="ct">UFT v2.0 Equation</div>
     <div class="row"><span>GBM (x""" + f"{weights.get('gbm',0.40):.2f}" + """)</span><span>$""" + f"{comps.get('gbm',0):,.0f}" + """</span></div>
@@ -664,58 +735,84 @@ td:first-child{text-align:center;font-weight:bold;color:var(--cyan)}
     <div class="big">$""" + f"{uft_med:,.0f}" + """</div>
     <div class="sm">Mode=$""" + f"{uft_mode:,.0f}" + """ | EMH=$""" + f"{spot:,.0f}" + """</div>
   </div>
-
   <div class="card">
-    <div class="ct">Scenario Probability (""" + exp0 + """)</div>
-    <div style="font-size:10px;margin-bottom:4px;display:flex;justify-content:space-between"><span style="color:var(--green)">A: Bounce &gt;+0.5s</span><span style="color:var(--green)">""" + f"{p_A}" + """%</span></div>
+    <div class="ct">Scenario Probability (__EXP0__)</div>
+    <div style="font-size:10px;display:flex;justify-content:space-between"><span style="color:var(--green)">A: Bounce &gt;+0.5s</span><span style="color:var(--green)">""" + f"{p_A}" + """%</span></div>
     <div class="pb"><div class="pf" style="width:""" + f"{min(p_A,100)}" + """%;background:var(--green)"></div></div>
-    <div style="font-size:10px;margin-bottom:4px;display:flex;justify-content:space-between"><span style="color:var(--yel)">B: Core range</span><span style="color:var(--yel)">""" + f"{p_B}" + """%</span></div>
+    <div style="font-size:10px;display:flex;justify-content:space-between"><span style="color:var(--yel)">B: Core range</span><span style="color:var(--yel)">""" + f"{p_B}" + """%</span></div>
     <div class="pb"><div class="pf" style="width:""" + f"{min(p_B,100)}" + """%;background:var(--yel)"></div></div>
-    <div style="font-size:10px;margin-bottom:4px;display:flex;justify-content:space-between"><span style="color:var(--red)">C: Put Wall test</span><span style="color:var(--red)">""" + f"{p_C}" + """%</span></div>
+    <div style="font-size:10px;display:flex;justify-content:space-between"><span style="color:var(--red)">C: Put Wall test</span><span style="color:var(--red)">""" + f"{p_C}" + """%</span></div>
     <div class="pb"><div class="pf" style="width:""" + f"{min(p_C,100)}" + """%;background:var(--red)"></div></div>
-    <div style="font-size:10px;margin-bottom:4px;display:flex;justify-content:space-between"><span style="color:var(--red)">D: Tail &lt;-1s</span><span style="color:var(--red)">""" + f"{p_D}" + """%</span></div>
+    <div style="font-size:10px;display:flex;justify-content:space-between"><span style="color:var(--red)">D: Tail &lt;-1s</span><span style="color:var(--red)">""" + f"{p_D}" + """%</span></div>
     <div class="pb"><div class="pf" style="width:""" + f"{min(p_D,100)}" + """%;background:#7f1d1d"></div></div>
   </div>
 </div>
 
 <div class="g2">
-  <div class="card">
-    <div class="ct">GEX Structure (Cross-Expiry)</div>
-    <div class="row"><span>GEX Pin (""" + exp0 + """)</span><span style="color:var(--yel)">$""" + f"{uft_mode:,.0f}" + """</span></div>
-    <div class="row"><span>Spot vs Pin</span><span style="color:var(--yel)">""" + f"{spot-uft_mode:+,.0f}" + """</span></div>
-    <div class="row"><span>PCR """ + exp0 + """ (Call """ + f"{tc0:.0f}" + """ / Put """ + f"{tp0:.0f}" + """)</span><span>""" + f"{pcr0:.3f}" + """</span></div>
-    <div class="row"><span>PCR """ + exp1 + """ (Call """ + f"{tc1:.0f}" + """ / Put """ + f"{tp1:.0f}" + """)</span><span>""" + f"{pcr1:.3f}" + """</span></div>
-    <div class="row"><span>PCR """ + exp2 + """ (Call """ + f"{tc2:.0f}" + """ / Put """ + f"{tp2:.0f}" + """)</span><span>""" + f"{pcr2:.3f}" + """</span></div>
-    <div class="row"><span>Call Wall """ + exp0 + """</span><span style="color:var(--green)">$""" + f"{cw0:,}" + """</span></div>
-    <div class="row"><span>Put Wall """ + exp0 + """</span><span style="color:var(--red)">$""" + f"{pw0:,}" + """</span></div>
-    <div class="row"><span>Call Wall """ + exp1 + """</span><span style="color:var(--green)">$""" + f"{cw1:,}" + """</span></div>
-    <div class="row"><span>Put Wall """ + exp1 + """</span><span style="color:var(--red)">$""" + f"{pw1:,}" + """</span></div>
-  </div>
-
   <div>
     <div class="card" style="margin-bottom:10px">
-      <div class="ct">Options Chain """ + exp0 + """ (Top Strikes by OI)</div>
+      <div class="ct">GEX Structure + Regime</div>
+      <div class="row"><span>Regime (__EXP0__)</span><span style="color:""" + regime_col + """;font-weight:bold">""" + regime + """</span></div>
+      <div class="row"><span>Gamma Flip (__EXP0__)</span><span style="color:var(--yel)">$__GF0__</span></div>
+      <div class="row"><span>Spot vs GF</span><span style="color:""" + regime_col + """">__SPOTGF__</span></div>
+      <div class="row"><span>GEX Pin (__EXP0__)</span><span style="color:var(--yel)">$""" + f"{uft_mode:,.0f}" + """</span></div>
+      <div class="row"><span>PCR __EXP0__ (C""" + f"{tc0:.0f}" + """/P""" + f"{tp0:.0f}" + """)</span><span>""" + f"{pcr0:.3f}" + """</span></div>
+      <div class="row"><span>PCR __EXP1__ (C""" + f"{tc1:.0f}" + """/P""" + f"{tp1:.0f}" + """)</span><span>""" + f"{pcr1:.3f}" + """</span></div>
+      <div class="row"><span>PCR __EXP2__ (C""" + f"{tc2:.0f}" + """/P""" + f"{tp2:.0f}" + """)</span><span>""" + f"{pcr2:.3f}" + """</span></div>
+      <div class="row"><span>Call Wall __EXP0__</span><span style="color:var(--green)">$""" + f"{cw0:,}" + """</span></div>
+      <div class="row"><span>Put Wall __EXP0__</span><span style="color:var(--red)">$""" + f"{pw0:,}" + """</span></div>
+      <div class="row"><span>Call Wall __EXP1__</span><span style="color:var(--green)">$""" + f"{cw1:,}" + """</span></div>
+      <div class="row"><span>Put Wall __EXP1__</span><span style="color:var(--red)">$""" + f"{pw1:,}" + """</span></div>
+    </div>
+    <div class="card">
+      <div class="ct">Cross-Expiry Skew</div>
+      <div class="row"><span>__EXP0__ (__COUNTDOWN__)</span><span style="color:__SK0_COL__">__SK0_STR__</span></div>
+      <div style="background:var(--border);height:6px;border-radius:3px;margin:2px 0 6px;overflow:hidden"><div style="height:100%;width:__SK0_W__;background:__SK0_COL__;border-radius:3px"></div></div>
+      <div class="row"><span>__EXP1__</span><span style="color:__SK1_COL__">__SK1_STR__</span></div>
+      <div style="background:var(--border);height:6px;border-radius:3px;margin:2px 0 6px;overflow:hidden"><div style="height:100%;width:__SK1_W__;background:__SK1_COL__;border-radius:3px"></div></div>
+      <div class="row"><span>__EXP2__</span><span style="color:__SK2_COL__">__SK2_STR__</span></div>
+      <div style="background:var(--border);height:6px;border-radius:3px;margin:2px 0 6px;overflow:hidden"><div style="height:100%;width:__SK2_W__;background:__SK2_COL__;border-radius:3px"></div></div>
+      <div style="font-size:9px;color:var(--mut);margin-top:4px">Positive skew = market pays premium for downside protection (bearish)</div>
+    </div>
+  </div>
+  <div>
+    <div class="card" style="margin-bottom:10px">
+      <div class="ct">Options Chain __EXP0__ (Top by OI)</div>
       <table>
         <thead><tr><th>Strike</th><th>Call OI</th><th>Put OI</th><th>PCR</th></tr></thead>
         <tbody>""" + strike_rows + """</tbody>
       </table>
     </div>
+    <div class="card" style="margin-bottom:10px">
+      <div class="ct">Active Rules</div>
+      """ + rules_html + """
+    </div>
     <div class="card" style="border-color:var(--acc)">
       <div class="ct">Oracle Insight</div>
       <div style="font-size:10px;line-height:1.7">""" + insight_txt + """</div>
-      """ + (f'<div style="font-size:9px;color:var(--cyan);margin-top:6px">Next trigger: {next_trig}</div>' if next_trig else "") + """
+      """ + (f'<div style="font-size:9px;color:var(--cyan);margin-top:6px">Next: {next_trig}</div>' if next_trig else "") + """
     </div>
   </div>
 </div>
+
+""" + settlement_html + """
 
 <div class="foot">GEX Oracle v2.0 | S""" + str(snapshot_num) + """ | 6h auto | Not investment advice</div>
 </body>
 </html>"""
 
-    # 替換佔位符（避免"""字串截斷問題）
-    html = html.replace("__SKEW0_COL__", skew0_col)
-    html = html.replace("__SKEW0_STR__", skew0_str)
-    html = html.replace("__EXP0__", exp0)
+    # Replace placeholders
+    html = html.replace("__SKEW0_STR__", skew0_str if "skew0_str" in dir() else sk0_str)
+    html = html.replace("__EXP0__", exp0).replace("__EXP1__", exp1).replace("__EXP2__", exp2)
+    html = html.replace("__GF0__", f"{gf0:,}").replace("__GF1__", f"{gf1:,}").replace("__GF2__", f"{gf2:,}")
+    html = html.replace("__SPOTGF__", f"{spot-gf_main:+,.0f}")
+    html = html.replace("__COUNTDOWN__", countdown_str)
+    html = html.replace("__SK0_STR__", sk0_str).replace("__SK1_STR__", sk1_str).replace("__SK2_STR__", sk2_str)
+    html = html.replace("__SK0_COL__", sk0_col).replace("__SK1_COL__", sk1_col).replace("__SK2_COL__", sk2_col)
+    sk0_w = f"{min(abs(sk0 or 0)*4, 100):.0f}%"
+    sk1_w = f"{min(abs(sk1 or 0)*4, 100):.0f}%"
+    sk2_w = f"{min(abs(sk2 or 0)*4, 100):.0f}%"
+    html = html.replace("__SK0_W__", sk0_w).replace("__SK1_W__", sk1_w).replace("__SK2_W__", sk2_w)
     return html
 
 def send_telegram(data, uft_result, collision, snapshot_num):
