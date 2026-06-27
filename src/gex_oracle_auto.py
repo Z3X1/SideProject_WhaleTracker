@@ -873,7 +873,38 @@ def main():
     # 5. Telegram推送
     send_telegram(data, uft_result, collision, snapshot_num)
 
-    # 6. 保存狀態
+    # 6. 記錄預測到settlement_log（UFT動態優化）
+    try:
+        import sys
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from uft_optimizer import record_prediction, check_and_record_settlement, optimize_weights
+        expiries_list = data.get("expiries", ["3JUL26","31JUL26","25SEP26"])
+        record_prediction(
+            snapshot_num=snapshot_num,
+            expiry=expiries_list[0] if expiries_list else "N/A",
+            predicted_median=uft_result["uft_median"],
+            predicted_mode=uft_result["uft_mode"],
+            components=uft_result.get("components", {}),
+            weights=data.get("uft_weights", {"gbm":0.40,"gex":0.10,"behavior":0.28,"bayesian":0.12,"timedecay":0.10}),
+            signals={
+                "fr": data.get("fr"), "skew": uft_result.get("skew_main"),
+                "dvol": data.get("dvol"), "pcr_main": uft_result.get("gex",{}).get("pcr"),
+                "macd_4h": (data.get("macd_4h") or data.get("macd",{}).get("4h",{})).get("macd"),
+                "regime": uft_result.get("regime")
+            },
+            sigma=uft_result.get("sigma", 4000)
+        )
+        # 檢查是否有到期日需要記錄結算價
+        check_and_record_settlement()
+        # 若有足夠樣本，自動優化權重
+        new_weights = optimize_weights(min_samples=10)
+        if new_weights:
+            data["uft_weights"] = new_weights
+            print(f"UFT weights: {new_weights}")
+    except Exception as e:
+        print(f"Optimizer error: {e}")
+
+    # 7. 保存狀態
     save_snapshot(data, uft_result, collision, snapshot_num)
 
     print(f"\n✅ S{snapshot_num} Done")
