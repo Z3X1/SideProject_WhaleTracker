@@ -766,13 +766,35 @@ _{datetime.now().strftime('%Y-%m-%d %H:%M')} UTC+8_"""
 # ============================================================
 
 def load_prev_data(db_path="data/gex_oracle.db"):
-    """載入上次快照 - 從counter.json持久化snapshot編號"""
+    """載入上次快照 - 優先從GitHub API讀取counter（Actions環境無持久化）"""
     os.makedirs("data", exist_ok=True)
-    # 讀取snapshot counter
     prev_num = 22
     prev_data = None
+
+    # 先嘗試從GitHub API讀取（Actions環境每次是全新，本地檔案不存在）
+    gh_token = os.environ.get("GH_TOKEN", "")
+    gh_repo = os.environ.get("GH_REPO", "Z3X1/SideProject_WhaleTracker")
+    if gh_token:
+        try:
+            import urllib.request
+            url = f"https://api.github.com/repos/{gh_repo}/contents/data/snapshot_counter.json"
+            req = urllib.request.Request(url, headers={
+                "Authorization": f"token {gh_token}",
+                "Accept": "application/vnd.github.v3+json"
+            })
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                import base64 as b64
+                data_raw = json.loads(resp.read())
+                counter = json.loads(b64.b64decode(data_raw["content"]).decode())
+                prev_num = int(counter.get("last_snapshot", 22))
+                prev_data = counter.get("last_data")
+                print(f"Loaded counter from GitHub: S{prev_num}")
+        except Exception as e:
+            print(f"GitHub counter read: {e}")
+
+    # fallback: 本地檔案
     counter_path = "data/snapshot_counter.json"
-    if os.path.exists(counter_path):
+    if os.path.exists(counter_path) and prev_num == 22:
         try:
             with open(counter_path) as f:
                 c = json.load(f)
@@ -887,10 +909,14 @@ def main():
             components=uft_result.get("components", {}),
             weights=data.get("uft_weights", {"gbm":0.40,"gex":0.10,"behavior":0.28,"bayesian":0.12,"timedecay":0.10}),
             signals={
-                "fr": data.get("fr"), "skew": uft_result.get("skew_main"),
-                "dvol": data.get("dvol"), "pcr_main": uft_result.get("gex",{}).get("pcr"),
+                "fr": data.get("fr"),
+                "skew": uft_result.get("skew_main"),
+                "dvol": data.get("dvol"),
+                "pcr_main": uft_result.get("gex",{}).get("pcr"),
                 "macd_4h": (data.get("macd_4h") or data.get("macd",{}).get("4h",{})).get("macd"),
-                "regime": uft_result.get("regime")
+                "regime_pos": 1.0 if uft_result.get("regime","POS")=="POS" else 0.0,
+                "gamma_flip": float(uft_result.get("gamma_flip", 0) or 0),
+                "contradiction": 1.0 if uft_result.get("behavior_contradiction", False) else 0.0,
             },
             sigma=uft_result.get("sigma", 4000)
         )
