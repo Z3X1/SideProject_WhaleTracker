@@ -467,6 +467,77 @@ def fetch_all():
     data["gamma_flip_main"] = gf
     print(f"Main Regime: {data['regime']} (GF=${gf:,}, Spot=${spot:,.0f})")
 
+    # ── 額外顆粒度計算 ──────────────────────────────────────
+    # 1. OI變化率（需要上次數據）
+    try:
+        import os as _os
+        prev_path = "data/oracle_market_data.json"
+        if _os.path.exists(prev_path):
+            with open(prev_path) as f:
+                prev = json.load(f)
+            prev_oi = float(prev.get("oi", 0))
+            prev_fr = float(prev.get("fr", 0))
+            curr_oi = float(data.get("oi", 0))
+            curr_fr = float(data.get("fr", 0))
+            data["oi_change"] = round(curr_oi - prev_oi, 4)
+            data["fr_change"] = round((curr_fr - prev_fr) * 100, 6)
+            data["oi_change_pct"] = round((curr_oi - prev_oi) / prev_oi * 100, 2) if prev_oi > 0 else 0
+            print(f"OI change: {data['oi_change']:+.4f}萬 ({data['oi_change_pct']:+.2f}%)")
+            print(f"FR change: {data['fr_change']:+.6f}%")
+    except Exception as e:
+        print(f"OI/FR change calc: {e}")
+
+    # 2. Perp basis（永續合約溢價）
+    try:
+        r_perp = requests.get(
+            "https://www.deribit.com/api/v2/public/get_book_summary_by_instrument?instrument_name=BTC-PERPETUAL",
+            timeout=10, headers=UA
+        )
+        perp_data = r_perp.json().get("result", [{}])[0]
+        perp_mark = float(perp_data.get("mark_price", 0))
+        spot_price = float(data.get("spot", 0))
+        if perp_mark > 0 and spot_price > 0:
+            basis = perp_mark - spot_price
+            basis_pct = basis / spot_price * 100
+            data["perp_basis"] = round(basis, 2)
+            data["perp_basis_pct"] = round(basis_pct, 4)
+            print(f"Perp basis: ${basis:+.2f} ({basis_pct:+.4f}%) ✅")
+    except Exception as e:
+        print(f"Perp basis: {e}")
+
+    # 3. ATM IV精確計算（最近ATM行權價的平均IV）
+    for expiry in expiries[:1]:  # 只算主要到期日
+        o = data.get("options", {}).get(expiry, {})
+        if not o:
+            continue
+        spot_price = float(data.get("spot", 0))
+        atm_strikes = sorted(o.keys(), key=lambda x: abs(x - spot_price))[:3]
+        call_ivs = [float(o[s].get("call_iv", 0)) for s in atm_strikes if o[s].get("call_iv")]
+        put_ivs = [float(o[s].get("put_iv", 0)) for s in atm_strikes if o[s].get("put_iv")]
+        if call_ivs and put_ivs:
+            atm_iv = (sum(call_ivs)/len(call_ivs) + sum(put_ivs)/len(put_ivs)) / 2
+            data[f"atm_iv_{expiry}"] = round(atm_iv, 2)
+            print(f"ATM IV {expiry}: {atm_iv:.2f}% ✅")
+
+    # 4. Put/Call OI比率精細化（ATM vs OTM分開）
+    for expiry in expiries:
+        o = data.get("options", {}).get(expiry, {})
+        if not o:
+            continue
+        spot_price = float(data.get("spot", 0))
+        # ATM: spot ±10%
+        atm_range = {k: v for k, v in o.items() if 0.90*spot_price <= k <= 1.10*spot_price}
+        otm_calls = {k: v for k, v in o.items() if k > spot_price * 1.10}
+        otm_puts = {k: v for k, v in o.items() if k < spot_price * 0.90}
+        atm_c = sum(float(v.get("call_oi",0)) for v in atm_range.values())
+        atm_p = sum(float(v.get("put_oi",0)) for v in atm_range.values())
+        otm_c_oi = sum(float(v.get("call_oi",0)) for v in otm_calls.values())
+        otm_p_oi = sum(float(v.get("put_oi",0)) for v in otm_puts.values())
+        data[f"pcr_atm_{expiry}"] = round(atm_p/atm_c, 3) if atm_c > 0 else 0
+        data[f"pcr_otm_{expiry}"] = round(otm_p_oi/otm_c_oi, 3) if otm_c_oi > 0 else 0
+
+    print(f"PCR ATM/OTM calculated for {len(expiries)} expiries ✅")
+
     data["timestamp"] = datetime.now(timezone.utc).isoformat()
 
     os.makedirs("data", exist_ok=True)
