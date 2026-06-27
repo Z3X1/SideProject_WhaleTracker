@@ -1,13 +1,13 @@
 {
   "meta": {
-    "generated_at": "2026-06-27T04:35:30.926959+00:00",
+    "generated_at": "2026-06-27T04:53:08.345287+00:00",
     "version": "signal_bridge_v1.0",
     "framework": "GEX Oracle Unified Field Theory"
   },
   "whale_signal": {
     "ts": "2026-06-27T04:00:00Z",
-    "raw_score": -0.004,
-    "weighted_score": -0.0011,
+    "raw_score": 0.004,
+    "weighted_score": 0.0011,
     "components": {
       "exchange_flow": {
         "score": 0.0,
@@ -25,8 +25,8 @@
         "weight": 0.15
       },
       "balance_delta": {
-        "score": -0.03763615347999985,
-        "net_btc": -18.818076739999924,
+        "score": 0.03763615347999985,
+        "net_btc": 18.818076739999924,
         "weight": 0.1
       }
     },
@@ -36,9 +36,9 @@
     "large_tx_count": 0,
     "largest_tx": null
   },
-  "narrative": "Whale behavior neutral: -0.004 \u2014 no clear directional signal",
+  "narrative": "Whale behavior neutral: +0.004 \u2014 no clear directional signal",
   "oracle_input": {
-    "behavior_component": -0.0011,
+    "behavior_component": 0.0011,
     "hard_triggers": [],
     "confidence": 0.17
   },
@@ -70,8 +70,8 @@
       {
         "address": "1Kr6QSydW9bFQG1mXiPNNu6WpJGmUa9i1g",
         "label": "Huobi",
-        "balance_btc": 5774.32595456,
-        "balance_delta": -18.818076739999924,
+        "balance_btc": 5793.1440313,
+        "balance_delta": 18.818076739999924,
         "rank": 20
       },
       {
