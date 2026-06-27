@@ -790,6 +790,7 @@ def load_prev_data(db_path="data/gex_oracle.db"):
                 prev_data = counter.get("last_data")
                 print(f"Loaded counter from GitHub: S{prev_num}")
         except Exception as e:
+                if "404" in str(e): prev_num = 23
             print(f"GitHub counter read: {e}")
 
     # fallback: 本地檔案
