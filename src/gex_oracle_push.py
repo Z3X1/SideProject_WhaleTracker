@@ -68,7 +68,9 @@ async function check(){{
   const h=await sha256(pw);
   if(h===HASH){{
     document.open();
-    document.write(atob(DATA));
+    const bytes = Uint8Array.from(atob(DATA), c => c.charCodeAt(0));
+    const decoded = new TextDecoder('utf-8').decode(bytes);
+    document.write(decoded);
     document.close();
   }}else{{
     document.getElementById('err').textContent='Wrong password';
