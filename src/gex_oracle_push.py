@@ -1,3 +1,4 @@
+import json
 #!/usr/bin/env python3
 import requests, base64, os, json, hashlib
 
@@ -66,7 +67,7 @@ def wrap_password(html_str):
         "</div>\n"
         "<script>\n"
         "const HASH=\"" + pw_hash + "\";\n"
-        "const DATA=" + content_json + ";\n"
+        "const DATA=" + json.dumps(html_str) + ";\n"
         "async function sha256(s){\n"
         "  const b=new TextEncoder().encode(s);\n"
         "  const h=await crypto.subtle.digest('SHA-256',b);\n"
