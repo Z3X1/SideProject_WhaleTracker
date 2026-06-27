@@ -4,45 +4,127 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <meta name="google" content="notranslate">
-<title>GEX Oracle</title>
+<title>GEX Oracle S23</title>
 <style>
+:root{--bg:#0a0e17;--panel:#111827;--border:#1e293b;--acc:#3b82f6;--green:#10b981;--red:#ef4444;--yel:#f59e0b;--pur:#8b5cf6;--cyan:#06b6d4;--txt:#e2e8f0;--mut:#64748b}
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#0a0e17;color:#e2e8f0;font-family:monospace;display:flex;justify-content:center;align-items:center;height:100vh}
-.box{text-align:center;padding:40px;border:1px solid #1e293b;border-radius:12px;background:#111827;width:300px}
-h2{color:#3b82f6;margin-bottom:24px;letter-spacing:3px;font-size:18px}
-input{background:#0a0e17;border:1px solid #3b82f6;color:#e2e8f0;padding:12px 20px;border-radius:6px;font-size:16px;width:100%;text-align:center;outline:none}
-button{background:#3b82f6;color:white;border:none;padding:12px;border-radius:6px;font-size:14px;cursor:pointer;margin-top:12px;width:100%}
-.err{color:#ef4444;margin-top:10px;font-size:12px;height:16px}
+body{background:var(--bg);color:var(--txt);font-family:Consolas,monospace;font-size:12px}
+.hdr{background:linear-gradient(135deg,#0f172a,#1e1b4b);border-bottom:2px solid var(--acc);padding:12px 16px;display:flex;justify-content:space-between;align-items:flex-start}
+.ht{font-size:16px;color:var(--acc);letter-spacing:2px;font-weight:bold}
+.hs{color:var(--mut);font-size:10px;margin-top:2px}
+.spot{font-size:24px;font-weight:bold;color:var(--yel)}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:10px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 10px 10px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:0 10px 10px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:10px}
+.ct{font-size:9px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+.kv{font-size:18px;font-weight:bold;text-align:center;padding:6px 0}
+.kl{font-size:9px;color:var(--mut);text-align:center;letter-spacing:1px}
+.al{border-radius:5px;padding:7px 10px;margin:0 10px 8px;font-size:11px}
+.row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:10px}
+.row:last-child{border-bottom:none}
+.big{font-size:20px;font-weight:bold;color:var(--yel);text-align:center;padding:6px 0}
+.sm{color:var(--mut);font-size:9px;text-align:center}
+.pb{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin:3px 0}
+.pf{height:100%;border-radius:4px}
+table{width:100%;border-collapse:collapse;font-size:10px}
+th{color:var(--mut);text-align:right;padding:3px 5px;font-size:9px;border-bottom:1px solid var(--border)}
+th:first-child{text-align:center}
+td{padding:3px 5px;text-align:right;border-bottom:1px solid rgba(30,41,59,.5)}
+td:first-child{text-align:center;font-weight:bold;color:var(--cyan)}
+.foot{text-align:center;padding:8px;color:var(--mut);font-size:9px}
 </style>
 </head>
 <body>
-<div class="box">
-<h2>GEX ORACLE</h2>
-<input type="password" id="pw" placeholder="Password" onkeydown="if(event.key==='Enter')check()">
-<button onclick="check()">ENTER</button>
-<div class="err" id="err"></div>
+
+<div class="hdr">
+  <div>
+    <div class="ht">GEX ORACLE AUTO S23</div>
+    <div class="hs">UFT v2.0 | 2026-06-27 15:54 UTC | 6h auto</div>
+  </div>
+  <div style="text-align:right">
+    <div style="font-size:9px;color:var(--mut)">BTC/USDT PERP</div>
+    <div class="spot">$60,662</div>
+    <div style="font-size:10px;color:#10b981">FR +0.00748% | DVOL 52.02%</div>
+  </div>
 </div>
-<script>
-const HASH="3ac22acab4270f1d078564ef14475d2ad239398b61104e839cb73b7c1f65eb63";
-const DATA="<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\">\n<meta name=\"google\" content=\"notranslate\">\n<title>GEX Oracle S23</title>\n<style>\n:root{--bg:#0a0e17;--panel:#111827;--border:#1e293b;--acc:#3b82f6;--green:#10b981;--red:#ef4444;--yel:#f59e0b;--pur:#8b5cf6;--cyan:#06b6d4;--txt:#e2e8f0;--mut:#64748b}\n*{box-sizing:border-box;margin:0;padding:0}\nbody{background:var(--bg);color:var(--txt);font-family:Consolas,monospace;font-size:12px}\n.hdr{background:linear-gradient(135deg,#0f172a,#1e1b4b);border-bottom:2px solid var(--acc);padding:12px 16px;display:flex;justify-content:space-between;align-items:flex-start}\n.ht{font-size:16px;color:var(--acc);letter-spacing:2px;font-weight:bold}\n.hs{color:var(--mut);font-size:10px;margin-top:2px}\n.spot{font-size:24px;font-weight:bold;color:var(--yel)}\n.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:10px}\n.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 10px 10px}\n.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:0 10px 10px}\n.card{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:10px}\n.ct{font-size:9px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border)}\n.kv{font-size:18px;font-weight:bold;text-align:center;padding:6px 0}\n.kl{font-size:9px;color:var(--mut);text-align:center;letter-spacing:1px}\n.al{border-radius:5px;padding:7px 10px;margin:0 10px 8px;font-size:11px}\n.row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:10px}\n.row:last-child{border-bottom:none}\n.big{font-size:20px;font-weight:bold;color:var(--yel);text-align:center;padding:6px 0}\n.sm{color:var(--mut);font-size:9px;text-align:center}\n.pb{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin:3px 0}\n.pf{height:100%;border-radius:4px}\ntable{width:100%;border-collapse:collapse;font-size:10px}\nth{color:var(--mut);text-align:right;padding:3px 5px;font-size:9px;border-bottom:1px solid var(--border)}\nth:first-child{text-align:center}\ntd{padding:3px 5px;text-align:right;border-bottom:1px solid rgba(30,41,59,.5)}\ntd:first-child{text-align:center;font-weight:bold;color:var(--cyan)}\n.foot{text-align:center;padding:8px;color:var(--mut);font-size:9px}\n</style>\n</head>\n<body>\n\n<div class=\"hdr\">\n  <div>\n    <div class=\"ht\">GEX ORACLE AUTO S23</div>\n    <div class=\"hs\">UFT v2.0 | 2026-06-27 15:54 UTC | 6h auto</div>\n  </div>\n  <div style=\"text-align:right\">\n    <div style=\"font-size:9px;color:var(--mut)\">BTC/USDT PERP</div>\n    <div class=\"spot\">$60,662</div>\n    <div style=\"font-size:10px;color:#10b981\">FR +0.00748% | DVOL 52.02%</div>\n  </div>\n</div>\n\n<div class=\"al\" style=\"background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.4);margin-top:8px\">\n  Oracle: <strong>N/A</strong> | sigma=$4,370 | UFT Median=<strong>$60,836</strong>\n</div>\n<div class=\"al\" style=\"background:rgba(245,158,11,.08);border:1px solid #f59e0b\">\n  Rule#15 TRIGGERED - Contradictory signal, x0.5 weight\n</div>\n\n<div class=\"g4\">\n  <div class=\"card\"><div class=\"kv\" style=\"color:var(--yel)\">$60,662</div><div class=\"kl\">SPOT</div></div>\n  <div class=\"card\"><div class=\"kv\" style=\"color:#10b981\">+0.00748%</div><div class=\"kl\">FUNDING RATE</div></div>\n  <div class=\"card\"><div class=\"kv\" style=\"color:var(--cyan)\">\" + (f\"{data.get('skew',{}).get(exp0, 0):+.1f}%\" if data.get('skew',{}).get(exp0) is not None else \"N/A\") + \"</div><div class=\"kl\">SKEW (\" + exp0 + \")</div></div>\n  <div class=\"card\"><div class=\"kv\" style=\"color:var(--mut)\">3.16w</div><div class=\"kl\">OPEN INTEREST</div></div>\n</div>\n\n<div class=\"g3\">\n  <div class=\"card\">\n    <div class=\"ct\">MACD (3 Timeframes)</div>\n    <div class=\"row\"><span style=\"color:var(--cyan)\">15m (30%)</span><span style=\"color:#10b981\">BULL X +55.30</span><span style=\"color:var(--mut)\">+113</span></div>\n    <div class=\"row\"><span style=\"color:var(--cyan)\">4h (62%)</span><span style=\"color:#10b981\">BULL X +342.35</span><span style=\"color:var(--mut)\">-603</span></div>\n    <div class=\"row\"><span style=\"color:var(--cyan)\">1D (70%)</span><span style=\"color:#10b981\">BULL X +37.26</span><span style=\"color:var(--mut)\">-2269</span></div>\n  </div>\n\n  <div class=\"card\">\n    <div class=\"ct\">UFT v2.0 Equation</div>\n    <div class=\"row\"><span>GBM (x0.40)</span><span>$24,352</span></div>\n    <div class=\"row\"><span>GEX (x0.10)</span><span>$6,066</span></div>\n    <div class=\"row\"><span>Behavior (x0.14)</span><span>$17,036</span></div>\n    <div class=\"row\"><span>Bayesian (x0.12)</span><span>$7,316</span></div>\n    <div class=\"row\"><span>TimeDecay (x0.10)</span><span>$6,066</span></div>\n    <div class=\"big\">$60,836</div>\n    <div class=\"sm\">Mode=$60,662 | EMH=$60,662</div>\n  </div>\n\n  <div class=\"card\">\n    <div class=\"ct\">Scenario Probability (3JUL26)</div>\n    <div style=\"font-size:10px;margin-bottom:4px;display:flex;justify-content:space-between\"><span style=\"color:var(--green)\">A: Bounce &gt;+0.5s</span><span style=\"color:var(--green)\">29.5%</span></div>\n    <div class=\"pb\"><div class=\"pf\" style=\"width:29.5%;background:var(--green)\"></div></div>\n    <div style=\"font-size:10px;margin-bottom:4px;display:flex;justify-content:space-between\"><span style=\"color:var(--yel)\">B: Core range</span><span style=\"color:var(--yel)\">38.3%</span></div>\n    <div class=\"pb\"><div class=\"pf\" style=\"width:38.3%;background:var(--yel)\"></div></div>\n    <div style=\"font-size:10px;margin-bottom:4px;display:flex;justify-content:space-between\"><span style=\"color:var(--red)\">C: Put Wall test</span><span style=\"color:var(--red)\">15.4%</span></div>\n    <div class=\"pb\"><div class=\"pf\" style=\"width:15.4%;background:var(--red)\"></div></div>\n    <div style=\"font-size:10px;margin-bottom:4px;display:flex;justify-content:space-between\"><span style=\"color:var(--red)\">D: Tail &lt;-1s</span><span style=\"color:var(--red)\">16.8%</span></div>\n    <div class=\"pb\"><div class=\"pf\" style=\"width:16.8%;background:#7f1d1d\"></div></div>\n  </div>\n</div>\n\n<div class=\"g2\">\n  <div class=\"card\">\n    <div class=\"ct\">GEX Structure (Cross-Expiry)</div>\n    <div class=\"row\"><span>GEX Pin (3JUL26)</span><span style=\"color:var(--yel)\">$60,662</span></div>\n    <div class=\"row\"><span>Spot vs Pin</span><span style=\"color:var(--yel)\">+0</span></div>\n    <div class=\"row\"><span>PCR 3JUL26 (Call 16064 / Put 10135)</span><span>0.631</span></div>\n    <div class=\"row\"><span>PCR 31JUL26 (Call 49671 / Put 22652)</span><span>0.456</span></div>\n    <div class=\"row\"><span>PCR 25SEP26 (Call 51183 / Put 30696)</span><span>0.600</span></div>\n    <div class=\"row\"><span>Call Wall 3JUL26</span><span style=\"color:var(--green)\">$64,000</span></div>\n    <div class=\"row\"><span>Put Wall 3JUL26</span><span style=\"color:var(--red)\">$58,000</span></div>\n    <div class=\"row\"><span>Call Wall 31JUL26</span><span style=\"color:var(--green)\">$80,000</span></div>\n    <div class=\"row\"><span>Put Wall 31JUL26</span><span style=\"color:var(--red)\">$50,000</span></div>\n  </div>\n\n  <div>\n    <div class=\"card\" style=\"margin-bottom:10px\">\n      <div class=\"ct\">Options Chain 3JUL26 (Top Strikes by OI)</div>\n      <table>\n        <thead><tr><th>Strike</th><th>Call OI</th><th>Put OI</th><th>PCR</th></tr></thead>\n        <tbody><tr><td>$55,000</td><td>0</td><td>1721</td><td>17213.0</td></tr><tr><td>$58,000</td><td>113</td><td>2026</td><td>17.88</td></tr><tr style=\"background:rgba(59,130,246,.08)\"><td>$60,000</td><td>622</td><td>1072</td><td>1.72</td></tr><tr style=\"background:rgba(59,130,246,.08)\"><td>$62,000</td><td>839</td><td>684</td><td>0.81</td></tr><tr><td>$64,000</td><td>1878</td><td>349</td><td>0.19</td></tr><tr><td>$65,000</td><td>1748</td><td>215</td><td>0.12</td></tr><tr><td>$66,000</td><td>1591</td><td>74</td><td>0.05</td></tr><tr><td>$68,000</td><td>1693</td><td>20</td><td>0.01</td></tr></tbody>\n      </table>\n    </div>\n    <div class=\"card\" style=\"border-color:var(--acc)\">\n      <div class=\"ct\">Oracle Insight</div>\n      <div style=\"font-size:10px;line-height:1.7\">Claude API not configured</div>\n      \n    </div>\n  </div>\n</div>\n\n<div class=\"foot\">GEX Oracle v2.0 | S23 | 6h auto | Not investment advice</div>\n</body>\n</html>";
-async function sha256(s){
-  const b=new TextEncoder().encode(s);
-  const h=await crypto.subtle.digest('SHA-256',b);
-  return Array.from(new Uint8Array(h)).map(x=>x.toString(16).padStart(2,'0')).join('');
-}
-async function check(){
-  const pw=document.getElementById('pw').value;
-  const h=await sha256(pw);
-  if(h===HASH){
-    document.open('text/html','replace');
-    document.write(DATA);
-    document.close();
-  }else{
-    document.getElementById('err').textContent='Wrong password';
-    document.getElementById('pw').value='';
-  }
-}
-document.getElementById('pw').focus();
-</script>
+
+<div class="al" style="background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.4);margin-top:8px">
+  Oracle: <strong>N/A</strong> | sigma=$4,370 | UFT Median=<strong>$60,836</strong>
+</div>
+<div class="al" style="background:rgba(245,158,11,.08);border:1px solid #f59e0b">
+  Rule#15 TRIGGERED - Contradictory signal, x0.5 weight
+</div>
+
+<div class="g4">
+  <div class="card"><div class="kv" style="color:var(--yel)">$60,662</div><div class="kl">SPOT</div></div>
+  <div class="card"><div class="kv" style="color:#10b981">+0.00748%</div><div class="kl">FUNDING RATE</div></div>
+  <div class="card"><div class="kv" style="color:var(--cyan)">" + (f"{data.get('skew',{}).get(exp0, 0):+.1f}%" if data.get('skew',{}).get(exp0) is not None else "N/A") + "</div><div class="kl">SKEW (" + exp0 + ")</div></div>
+  <div class="card"><div class="kv" style="color:var(--mut)">3.16w</div><div class="kl">OPEN INTEREST</div></div>
+</div>
+
+<div class="g3">
+  <div class="card">
+    <div class="ct">MACD (3 Timeframes)</div>
+    <div class="row"><span style="color:var(--cyan)">15m (30%)</span><span style="color:#10b981">BULL X +55.30</span><span style="color:var(--mut)">+113</span></div>
+    <div class="row"><span style="color:var(--cyan)">4h (62%)</span><span style="color:#10b981">BULL X +342.35</span><span style="color:var(--mut)">-603</span></div>
+    <div class="row"><span style="color:var(--cyan)">1D (70%)</span><span style="color:#10b981">BULL X +37.26</span><span style="color:var(--mut)">-2269</span></div>
+  </div>
+
+  <div class="card">
+    <div class="ct">UFT v2.0 Equation</div>
+    <div class="row"><span>GBM (x0.40)</span><span>$24,352</span></div>
+    <div class="row"><span>GEX (x0.10)</span><span>$6,066</span></div>
+    <div class="row"><span>Behavior (x0.14)</span><span>$17,036</span></div>
+    <div class="row"><span>Bayesian (x0.12)</span><span>$7,316</span></div>
+    <div class="row"><span>TimeDecay (x0.10)</span><span>$6,066</span></div>
+    <div class="big">$60,836</div>
+    <div class="sm">Mode=$60,662 | EMH=$60,662</div>
+  </div>
+
+  <div class="card">
+    <div class="ct">Scenario Probability (3JUL26)</div>
+    <div style="font-size:10px;margin-bottom:4px;display:flex;justify-content:space-between"><span style="color:var(--green)">A: Bounce &gt;+0.5s</span><span style="color:var(--green)">29.5%</span></div>
+    <div class="pb"><div class="pf" style="width:29.5%;background:var(--green)"></div></div>
+    <div style="font-size:10px;margin-bottom:4px;display:flex;justify-content:space-between"><span style="color:var(--yel)">B: Core range</span><span style="color:var(--yel)">38.3%</span></div>
+    <div class="pb"><div class="pf" style="width:38.3%;background:var(--yel)"></div></div>
+    <div style="font-size:10px;margin-bottom:4px;display:flex;justify-content:space-between"><span style="color:var(--red)">C: Put Wall test</span><span style="color:var(--red)">15.4%</span></div>
+    <div class="pb"><div class="pf" style="width:15.4%;background:var(--red)"></div></div>
+    <div style="font-size:10px;margin-bottom:4px;display:flex;justify-content:space-between"><span style="color:var(--red)">D: Tail &lt;-1s</span><span style="color:var(--red)">16.8%</span></div>
+    <div class="pb"><div class="pf" style="width:16.8%;background:#7f1d1d"></div></div>
+  </div>
+</div>
+
+<div class="g2">
+  <div class="card">
+    <div class="ct">GEX Structure (Cross-Expiry)</div>
+    <div class="row"><span>GEX Pin (3JUL26)</span><span style="color:var(--yel)">$60,662</span></div>
+    <div class="row"><span>Spot vs Pin</span><span style="color:var(--yel)">+0</span></div>
+    <div class="row"><span>PCR 3JUL26 (Call 16064 / Put 10135)</span><span>0.631</span></div>
+    <div class="row"><span>PCR 31JUL26 (Call 49671 / Put 22652)</span><span>0.456</span></div>
+    <div class="row"><span>PCR 25SEP26 (Call 51183 / Put 30696)</span><span>0.600</span></div>
+    <div class="row"><span>Call Wall 3JUL26</span><span style="color:var(--green)">$64,000</span></div>
+    <div class="row"><span>Put Wall 3JUL26</span><span style="color:var(--red)">$58,000</span></div>
+    <div class="row"><span>Call Wall 31JUL26</span><span style="color:var(--green)">$80,000</span></div>
+    <div class="row"><span>Put Wall 31JUL26</span><span style="color:var(--red)">$50,000</span></div>
+  </div>
+
+  <div>
+    <div class="card" style="margin-bottom:10px">
+      <div class="ct">Options Chain 3JUL26 (Top Strikes by OI)</div>
+      <table>
+        <thead><tr><th>Strike</th><th>Call OI</th><th>Put OI</th><th>PCR</th></tr></thead>
+        <tbody><tr><td>$55,000</td><td>0</td><td>1721</td><td>17213.0</td></tr><tr><td>$58,000</td><td>113</td><td>2026</td><td>17.88</td></tr><tr style="background:rgba(59,130,246,.08)"><td>$60,000</td><td>622</td><td>1072</td><td>1.72</td></tr><tr style="background:rgba(59,130,246,.08)"><td>$62,000</td><td>839</td><td>684</td><td>0.81</td></tr><tr><td>$64,000</td><td>1878</td><td>349</td><td>0.19</td></tr><tr><td>$65,000</td><td>1748</td><td>215</td><td>0.12</td></tr><tr><td>$66,000</td><td>1591</td><td>74</td><td>0.05</td></tr><tr><td>$68,000</td><td>1693</td><td>20</td><td>0.01</td></tr></tbody>
+      </table>
+    </div>
+    <div class="card" style="border-color:var(--acc)">
+      <div class="ct">Oracle Insight</div>
+      <div style="font-size:10px;line-height:1.7">Claude API not configured</div>
+      
+    </div>
+  </div>
+</div>
+
+<div class="foot">GEX Oracle v2.0 | S23 | 6h auto | Not investment advice</div>
 </body>
 </html>
