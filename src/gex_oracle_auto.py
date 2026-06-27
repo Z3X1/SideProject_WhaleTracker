@@ -642,7 +642,7 @@ td:first-child{text-align:center;font-weight:bold;color:var(--cyan)}
 <div class="g4">
   <div class="card"><div class="kv" style="color:var(--yel)">$""" + f"{spot:,.0f}" + """</div><div class="kl">SPOT</div></div>
   <div class="card"><div class="kv" style="color:""" + fr_col + """">""" + fr_sign + f"{fr:.5f}" + """%</div><div class="kl">FUNDING RATE</div></div>
-  <div class="card"><div class="kv" style="color:""" + skew0_col + """">""" + skew0_str + """</div><div class="kl">SKEW (""" + exp0 + """)</div></div>
+  <div class="card"><div class="kv" style="color:__SKEW0_COL__">__SKEW0_STR__</div><div class="kl">SKEW (__EXP0__)</div></div>
   <div class="card"><div class="kv" style="color:var(--mut)">""" + f"{oi:.2f}" + """w</div><div class="kl">OPEN INTEREST</div></div>
 </div>
 
@@ -712,6 +712,10 @@ td:first-child{text-align:center;font-weight:bold;color:var(--cyan)}
 </body>
 </html>"""
 
+    # 替換佔位符（避免"""字串截斷問題）
+    html = html.replace("__SKEW0_COL__", skew0_col)
+    html = html.replace("__SKEW0_STR__", skew0_str)
+    html = html.replace("__EXP0__", exp0)
     return html
 
 def send_telegram(data, uft_result, collision, snapshot_num):
