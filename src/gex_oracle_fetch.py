@@ -222,16 +222,17 @@ def fetch_all():
         ("https://api.bybit.com/v5/market/account-ratio?category=linear&symbol=BTCUSDT&period=1h&limit=1",
          lambda d: float(d["result"]["list"][0]["buyRatio"])/float(d["result"]["list"][0]["sellRatio"])),
         # OKX
+        # OKX: longRatio是0-1小數，需轉換為ratio
         ("https://www.okx.com/api/v5/rubik/stat/contracts/long-short-account-ratio-contract?ccy=BTC&period=5m&limit=1",
-         lambda d: float(d["data"][0][1])/float(d["data"][0][2])),
+         lambda d: float(d["data"][0][1])/(1-float(d["data"][0][1])) if float(d["data"][0][1]) not in [0,1] else None),
         ("https://www.okx.com/api/v5/rubik/stat/contracts/long-short-account-ratio?ccy=BTC&period=5m&limit=1",
-         lambda d: float(d["data"][0][1])/float(d["data"][0][2])),
-        # CoinGlass open API
+         lambda d: float(d["data"][0][1])/(1-float(d["data"][0][1])) if float(d["data"][0][1]) not in [0,1] else None),
+        # CoinGlass
         ("https://open-api.coinglass.com/public/v2/long_short?symbol=BTC&period=5m",
          lambda d: float(d["data"][0]["longRatio"])/float(d["data"][0]["shortRatio"]) if d.get("data") else None),
-        # Deribit perpetual (long/short via open interest direction)
-        ("https://www.deribit.com/api/v2/public/get_book_summary_by_instrument?instrument_name=BTC-PERPETUAL",
-         lambda d: float(d["result"][0].get("current_funding",0))),
+        # Bybit 1d period
+        ("https://api.bybit.com/v5/market/account-ratio?category=linear&symbol=BTCUSDT&period=1d&limit=1",
+         lambda d: float(d["result"]["list"][0]["buyRatio"])/float(d["result"]["list"][0]["sellRatio"])),
     ]
     for url, parser in ls_sources:
         try:
