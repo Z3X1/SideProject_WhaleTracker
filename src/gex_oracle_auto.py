@@ -452,182 +452,163 @@ UFT計算結果：
 # ============================================================
 
 def generate_html(data, uft_result, collision, snapshot_num):
-    """生成完整Dashboard HTML"""
-    spot = data["spot"]
-    ts = data["timestamp"]
-    now_utc8 = datetime.now().strftime("%Y-%m-%d %H:%M UTC+8")
+    spot = data.get("spot", 0)
+    fr = data.get("fr", 0) * 100
+    oi = data.get("oi", 0)
+    ls = data.get("ls", 0)
+    dvol = data.get("dvol", 0)
+    ts = data.get("timestamp", "")[:16].replace("T", " ")
+    expiries = data.get("expiries", ["3JUL26", "31JUL26", "25SEP26"])
 
-    fr_pct = data["fr"] * 100
-    fr_color = "var(--green)" if fr_pct > 0 else "var(--red)"
-    fr_sign = "+" if fr_pct > 0 else ""
+    uft_med = uft_result.get("uft_median", spot)
+    uft_mode = uft_result.get("uft_mode", spot)
+    sigma = uft_result.get("sigma", 0)
+    contradiction = uft_result.get("behavior_contradiction", False)
+    pcr = uft_result.get("gex", {}).get("pcr", 1.0)
+    comps = uft_result.get("components", {})
 
-    macd_15 = data["macd_15m"]
-    macd_4h = data["macd_4h"]
-    macd_1d = data["macd_1d"]
+    m15 = data.get("macd_15m", data.get("macd", {}).get("15m", {}))
+    m4h = data.get("macd_4h", data.get("macd", {}).get("4h", {}))
+    m1d = data.get("macd_1d", data.get("macd", {}).get("1d", {}))
 
-    # 15min判斷
-    m15_status = "Bullish X" if macd_15["dif"] > macd_15["dea"] else "Bearish X"
-    m15_color = "var(--green)" if m15_status == "Bullish X" else "var(--red)"
-    m4h_status = "Bullish X" if macd_4h["dif"] > macd_4h["dea"] else "Bearish X"
-    m4h_color = "var(--green)" if m4h_status == "Bullish X" else "var(--red)"
-    m1d_status = "Bullish X" if macd_1d["dif"] > macd_1d["dea"] else "Bearish X"
-    m1d_color = "var(--green)" if m1d_status == "Bullish X" else "var(--red)"
+    def macd_status(m):
+        dif = m.get("dif", 0)
+        dea = m.get("dea", 0)
+        macd_val = m.get("macd", 0)
+        status = "BULL X" if dif > dea else "BEAR X"
+        color = "#10b981" if dif > dea else "#ef4444"
+        return status, color, dif, dea, macd_val
 
-    # 碰撞結果
-    oracle = collision.get("oracle_verdict", "N/A") if collision else "N/A"
-    key_insight = collision.get("key_insight", "Claude API未啟用") if collision else "Claude API未啟用"
-    next_trigger = collision.get("next_trigger", "") if collision else ""
+    s15, c15, dif15, dea15, mac15 = macd_status(m15)
+    s4h, c4h, dif4h, dea4h, mac4h = macd_status(m4h)
+    s1d, c1d, dif1d, dea1d, mac1d = macd_status(m1d)
 
-    uft_med = uft_result["uft_median"]
-    uft_mode = uft_result["uft_mode"]
-    sigma = uft_result["sigma"]
-    contradiction = uft_result["behavior_contradiction"]
-    rule15_text = "⚠️ Rule#15：Contradictory Signal，BehaviorSignal x0.5" if contradiction else "✅ Rule#15：信號一致，全權重"
-    rule15_color = "var(--yellow)" if contradiction else "var(--green)"
+    fr_color = "#10b981" if fr > 0 else "#ef4444"
+    fr_sign = "+" if fr >= 0 else ""
+    r15_text = "Rule#15 CLEARED - Signal consistent, full weight" if not contradiction else "Rule#15 TRIGGERED - Contradictory signal, x0.5 weight"
+    r15_color = "#10b981" if not contradiction else "#f59e0b"
 
-    html = f"""<!DOCTYPE html>
+    oracle_txt = "N/A"
+    insight_txt = "Claude API not configured"
+    if collision:
+        oracle_txt = collision.get("oracle_verdict", "N/A")
+        insight_txt = collision.get("key_insight", "")
+
+    exp0 = expiries[0] if len(expiries) > 0 else "N/A"
+    exp1 = expiries[1] if len(expiries) > 1 else "N/A"
+    exp2 = expiries[2] if len(expiries) > 2 else "N/A"
+
+    opts = data.get("options", {})
+    def pcr_for(exp):
+        o = opts.get(exp, {})
+        if not o:
+            return 0, 0, 0
+        tc = sum(v.get("call_oi", 0) for v in o.values())
+        tp = sum(v.get("put_oi", 0) for v in o.values())
+        return tc, tp, round(tp/tc, 3) if tc > 0 else 0
+
+    c0, p0, pcr0 = pcr_for(exp0)
+    c1, p1, pcr1 = pcr_for(exp1)
+    c2, p2, pcr2 = pcr_for(exp2)
+
+    html = """<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="google" content="notranslate">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="google" content="notranslate">
 <meta http-equiv="refresh" content="21600">
-<title>GEX Oracle S{snapshot_num} | Auto</title>
+<title>GEX Oracle S""" + str(snapshot_num) + """</title>
 <style>
-:root{{--bg:#0a0e17;--panel:#111827;--border:#1e293b;--accent:#3b82f6;--green:#10b981;--red:#ef4444;--yellow:#f59e0b;--purple:#8b5cf6;--cyan:#06b6d4;--text:#e2e8f0;--muted:#64748b}}
-*{{box-sizing:border-box;margin:0;padding:0}}
-body{{background:var(--bg);color:var(--text);font-family:'SF Mono','Consolas',monospace;font-size:12px}}
-.header{{background:linear-gradient(135deg,#0f172a,#1e1b4b);border-bottom:2px solid var(--accent);padding:14px 20px;display:flex;justify-content:space-between;align-items:center}}
-.header h1{{font-size:18px;color:var(--accent);letter-spacing:2px}}
-.spot{{font-size:28px;font-weight:bold;color:var(--yellow)}}
-.grid-4{{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:14px}}
-.grid-2{{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 14px 14px}}
-.card{{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:12px}}
-.card-title{{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:5px}}
-.kpi{{text-align:center}}
-.kpi-val{{font-size:20px;font-weight:bold}}
-.kpi-lbl{{font-size:9px;color:var(--muted);margin-top:2px}}
-.kpi-delta{{font-size:10px;margin-top:3px}}
-.bull{{color:var(--green)}}.bear{{color:var(--red)}}.neutral{{color:var(--yellow)}}.info{{color:var(--cyan)}}
-.alert{{border-radius:6px;padding:8px 12px;margin:0 14px 10px;font-size:11px;display:flex;align-items:flex-start;gap:8px}}
-.alert-info{{background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.4)}}
-.alert-warn{{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.4)}}
-.settlement-box{{background:linear-gradient(135deg,rgba(59,130,246,.1),rgba(139,92,246,.1));border:2px solid var(--accent);border-radius:10px;padding:14px;text-align:center;margin:14px}}
-.settlement-main{{font-size:32px;font-weight:bold;color:var(--yellow)}}
-.auto-badge{{background:rgba(16,185,129,.2);color:var(--green);padding:2px 8px;border-radius:10px;font-size:9px;font-weight:bold}}
-.insight-box{{background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.3);border-radius:6px;padding:10px;margin:0 14px 10px;font-size:11px;line-height:1.7}}
-hr{{border:none;border-top:1px solid var(--border);margin:8px 0}}
+:root{--bg:#0a0e17;--panel:#111827;--border:#1e293b;--accent:#3b82f6;--green:#10b981;--red:#ef4444;--yellow:#f59e0b;--text:#e2e8f0;--muted:#64748b}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:Consolas,monospace;font-size:12px}
+.hdr{background:linear-gradient(135deg,#0f172a,#1e1b4b);border-bottom:2px solid var(--accent);padding:14px 20px;display:flex;justify-content:space-between;align-items:center}
+.hdr-title{font-size:18px;color:var(--accent);letter-spacing:3px;font-weight:bold}
+.hdr-sub{color:var(--muted);font-size:10px;margin-top:3px}
+.spot{font-size:26px;font-weight:bold;color:var(--yellow)}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 14px 14px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:12px}
+.ct{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:5px}
+.kpi{text-align:center;padding:8px}
+.kv{font-size:20px;font-weight:bold}
+.kl{font-size:9px;color:var(--muted);margin-top:3px;letter-spacing:1px}
+.alert{border-radius:6px;padding:8px 12px;margin:0 14px 10px;font-size:11px}
+.row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px}
+.row:last-child{border-bottom:none}
+.big{font-size:22px;font-weight:bold;color:var(--yellow);text-align:center;padding:8px 0}
+.muted{color:var(--muted);font-size:10px;text-align:center}
+.foot{text-align:center;padding:10px;color:var(--muted);font-size:10px}
 </style>
 </head>
 <body>
-
-<div class="header">
+<div class="hdr">
   <div>
-    <h1>⚡ GEX ORACLE AUTO <span class="auto-badge">S{snapshot_num}</span></h1>
-    <div style="color:var(--muted);font-size:10px;margin-top:2px">UFT v2.0 自動化 ｜ {now_utc8}</div>
+    <div class="hdr-title">GEX ORACLE AUTO S""" + str(snapshot_num) + """</div>
+    <div class="hdr-sub">UFT v2.0 | """ + ts + """ UTC | Auto every 6h</div>
   </div>
   <div style="text-align:right">
-    <div style="font-size:10px;color:var(--muted)">BTC/USDT 永續</div>
-    <div class="spot">${spot:,.0f}</div>
-    <div style="font-size:10px;color:{fr_color}">FR {fr_sign}{fr_pct:.5f}% ｜ DVOL {data['dvol']:.2f}%</div>
+    <div style="font-size:10px;color:var(--muted)">BTC/USDT PERP</div>
+    <div class="spot">$""" + f"{spot:,.0f}" + """</div>
+    <div style="font-size:10px;color:""" + fr_color + """">FR """ + fr_sign + f"{fr:.5f}" + """% | DVOL """ + f"{dvol:.2f}" + """%</div>
   </div>
 </div>
 
-<div class="alert alert-info" style="margin-top:10px">
-  <span>⚡</span>
-  <span><strong>Oracle Verdict：{oracle}</strong> ｜ σ(3JUL26)=${sigma:,.0f} ｜ UFT Median=${uft_med:,.0f}</span>
+<div class="alert" style="background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.4);margin-top:10px">
+  Oracle: <strong>""" + oracle_txt + """</strong> | sigma(""" + exp0 + """)=$""" + f"{sigma:,.0f}" + """ | UFT Median=$""" + f"{uft_med:,.0f}" + """
+</div>
+<div class="alert" style="background:rgba(245,158,11,.1);border:1px solid """ + r15_color + """">
+  """ + r15_text + """
 </div>
 
-<div class="alert" style="margin:0 14px 10px;background:rgba(245,158,11,.1);border:1px solid {rule15_color};border-radius:6px;padding:8px 12px;font-size:11px;display:flex;gap:8px;align-items:center">
-  <span style="color:{rule15_color}">{rule15_text}</span>
+<div class="grid4">
+  <div class="card kpi"><div class="kv" style="color:var(--yellow)">$""" + f"{spot:,.0f}" + """</div><div class="kl">SPOT</div></div>
+  <div class="card kpi"><div class="kv" style="color:""" + fr_color + """">""" + fr_sign + f"{fr:.5f}" + """%</div><div class="kl">FUNDING RATE</div></div>
+  <div class="card kpi"><div class="kv" style="color:#a78bfa">""" + f"{ls:.4f}" + """</div><div class="kl">LONG/SHORT</div></div>
+  <div class="card kpi"><div class="kv" style="color:var(--muted)">""" + f"{oi:.2f}" + """w</div><div class="kl">OPEN INTEREST</div></div>
 </div>
 
-<div class="grid-4">
-  <div class="card kpi">
-    <div class="kpi-val" style="color:var(--yellow)">${spot:,.0f}</div>
-    <div class="kpi-lbl">SPOT</div>
-  </div>
-  <div class="card kpi">
-    <div class="kpi-val" style="color:{fr_color}">{fr_sign}{fr_pct:.5f}%</div>
-    <div class="kpi-lbl">Funding Rate</div>
-  </div>
-  <div class="card kpi">
-    <div class="kpi-val {'bull' if data['ls'] > 2.1 else 'neutral'}">{data['ls']:.4f}</div>
-    <div class="kpi-lbl">大戶多空比 L/S</div>
-  </div>
-  <div class="card kpi">
-    <div class="kpi-val neutral">{data['oi']:.2f}萬</div>
-    <div class="kpi-lbl">持倉量 OI</div>
-  </div>
-</div>
-
-<div class="grid-2">
+<div class="grid2">
   <div>
-    <div class="card" style="margin-bottom:10px">
-      <div class="card-title">📈 MACD (3 Timeframes)</div>
-      <div style="font-size:10px;line-height:2">
-        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)">
-          <span class="info">15min (30%)</span>
-          <span style="color:{m15_color};font-weight:bold">{m15_status} {macd_15['macd']:+.2f}</span>
-          <span style="color:var(--muted)">DIF {macd_15['dif']:+.1f}</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)">
-          <span class="info">4h (62%)</span>
-          <span style="color:{m4h_color};font-weight:bold">{m4h_status} {macd_4h['macd']:+.2f}</span>
-          <span style="color:var(--muted)">DIF {macd_4h['dif']:+.1f}</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;padding:4px 0">
-          <span class="info">1D (70%)</span>
-          <span style="color:{m1d_color};font-weight:bold">{m1d_status} {macd_1d['macd']:+.2f}</span>
-          <span style="color:var(--muted)">DIF {macd_1d['dif']:+.1f}</span>
-        </div>
-      </div>
+    <div class="card" style="margin-bottom:12px">
+      <div class="ct">MACD (3 Timeframes)</div>
+      <div class="row"><span style="color:#06b6d4">15min (30%)</span><span style="color:""" + c15 + """">""" + s15 + " " + f"{mac15:+.2f}" + """</span><span style="color:var(--muted)">DIF """ + f"{dif15:+.1f}" + """</span></div>
+      <div class="row"><span style="color:#06b6d4">4h (62%)</span><span style="color:""" + c4h + """">""" + s4h + " " + f"{mac4h:+.2f}" + """</span><span style="color:var(--muted)">DIF """ + f"{dif4h:+.1f}" + """</span></div>
+      <div class="row"><span style="color:#06b6d4">1D (70%)</span><span style="color:""" + c1d + """">""" + s1d + " " + f"{mac1d:+.2f}" + """</span><span style="color:var(--muted)">DIF """ + f"{dif1d:+.1f}" + """</span></div>
     </div>
-
     <div class="card">
-      <div class="card-title">🎯 GEX Structure</div>
-      <div style="font-size:10px;line-height:2">
-        <div>GEX Pin (3JUL26): <strong>${uft_mode:,}</strong></div>
-        <div>PCR: <strong>{uft_result['gex']['pcr']:.3f}</strong></div>
-        <div>Spot vs Pin: <strong>{spot - uft_mode:+,.0f}</strong></div>
-      </div>
+      <div class="ct">GEX Structure</div>
+      <div class="row"><span>GEX Pin (""" + exp0 + """)</span><span style="color:var(--yellow)">$""" + f"{uft_mode:,.0f}" + """</span></div>
+      <div class="row"><span>PCR (""" + exp0 + """)</span><span>""" + f"{pcr0:.3f}" + """</span></div>
+      <div class="row"><span>PCR (""" + exp1 + """)</span><span>""" + f"{pcr1:.3f}" + """</span></div>
+      <div class="row"><span>PCR (""" + exp2 + """)</span><span>""" + f"{pcr2:.3f}" + """</span></div>
+      <div class="row"><span>Spot vs Pin</span><span style="color:var(--yellow)">""" + f"{spot - uft_mode:+,.0f}" + """</span></div>
     </div>
   </div>
-
   <div>
-    <div class="card">
-      <div class="card-title">⚗️ UFT v2.0 分解</div>
-      <div style="font-size:10px;line-height:2;font-family:monospace">
-        <div>GBM(×0.40) = ${uft_result['components']['gbm']:,.0f}</div>
-        <div>GEX(×0.10) = ${uft_result['components']['gex']:,.0f}</div>
-        <div>Behavior(×0.28{'×0.5' if contradiction else ''}) = ${uft_result['components']['behavior']:,.0f}</div>
-        <div>Bayesian(×0.12) = ${uft_result['components']['bayesian']:,.0f}</div>
-        <div>TimeDecay(×0.10) = ${uft_result['components']['timedecay']:,.0f}</div>
-        <hr>
-        <div style="font-size:13px;color:var(--yellow);font-weight:bold">Median = ${uft_med:,.0f}</div>
-        <div style="color:var(--muted)">Mode = ${uft_mode:,} | EMH = ${spot:,}</div>
-      </div>
+    <div class="card" style="margin-bottom:12px">
+      <div class="ct">UFT v2.0 Equation</div>
+      <div class="row"><span>GBM (x0.40)</span><span>$""" + f"{comps.get('gbm', 0):,.0f}" + """</span></div>
+      <div class="row"><span>GEX (x0.10)</span><span>$""" + f"{comps.get('gex', 0):,.0f}" + """</span></div>
+      <div class="row"><span>Behavior (x0.28""" + ("x0.5" if contradiction else "") + """)</span><span>$""" + f"{comps.get('behavior', 0):,.0f}" + """</span></div>
+      <div class="row"><span>Bayesian (x0.12)</span><span>$""" + f"{comps.get('bayesian', 0):,.0f}" + """</span></div>
+      <div class="row"><span>TimeDecay (x0.10)</span><span>$""" + f"{comps.get('timedecay', 0):,.0f}" + """</span></div>
+      <div class="big">$""" + f"{uft_med:,.0f}" + """</div>
+      <div class="muted">Mode=$""" + f"{uft_mode:,.0f}" + """ | EMH=$""" + f"{spot:,.0f}" + """</div>
+    </div>
+    <div class="card" style="border-color:var(--accent)">
+      <div class="ct">Oracle Insight</div>
+      <div style="font-size:10px;line-height:1.7;color:var(--text)">""" + insight_txt + """</div>
     </div>
   </div>
 </div>
 
-<div class="insight-box">
-  <strong style="color:var(--purple)">💡 Oracle洞察：</strong>{key_insight}
-  {"<br><strong style='color:var(--cyan)'>📍 監控：</strong>" + next_trigger if next_trigger else ""}
-</div>
-
-<div style="text-align:center;padding:10px;color:var(--muted);font-size:10px">
-  Auto-generated ｜ GEX Oracle v2.0 ｜ Updates every 6h ｜ Not investment advice
-</div>
-
+<div class="foot">GEX Oracle v2.0 | S""" + str(snapshot_num) + """ | Updates every 6h | Not investment advice</div>
 </body>
 </html>"""
 
     return html
-
-# ============================================================
-# 5. Telegram推送層
-# ============================================================
 
 def send_telegram(data, uft_result, collision, snapshot_num):
     """推送簡要摘要到Telegram"""
