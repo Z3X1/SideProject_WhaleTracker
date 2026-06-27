@@ -1,19 +1,14 @@
-name: GEX Oracle Auto (每6h)
+name: GEX Oracle (每6h)
 
 on:
   schedule:
-    - cron: '0 0,6,12,18 * * *'
+    - cron: "0 0,6,12,18 * * *"
   workflow_dispatch:
 
-concurrency:
-  group: gex-oracle
-  cancel-in-progress: false
-
 jobs:
-  oracle-update:
-    name: GEX Oracle 自動快照
+  oracle:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
 
     steps:
       - name: Checkout
@@ -24,24 +19,33 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-          cache: 'pip'
+          python-version: "3.12"
 
-      - name: Install dependencies
+      - name: Install deps
         run: pip install requests anthropic
 
-      - name: Run GEX Oracle
+      - name: Probe and fetch all data
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          python3 src/gex_oracle_fetch.py
+
+      - name: Run Oracle analysis
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          GH_REPO: ${{ github.repository }}
           OUTPUT_DIR: docs/oracle
-        run: python src/gex_oracle_auto.py
-
-      - name: Commit and push
         run: |
-          git config user.name "GEX Oracle Bot"
-          git config user.email "oracle@gex.auto"
-          git add docs/oracle/ data/ || true
-          git diff --staged --quiet || git commit -m "auto: GEX Oracle $(date -u +%Y%m%d-%H%M)"
-          git push
+          mkdir -p docs/oracle
+          python src/gex_oracle_auto.py
+
+      - name: Push results via GitHub API
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          python3 src/gex_oracle_push.py
