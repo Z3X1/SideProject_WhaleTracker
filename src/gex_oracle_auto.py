@@ -1,3 +1,4 @@
+import json
 #!/usr/bin/env python3
 """
 GEX Oracle 自動化引擎 v2.0
@@ -705,8 +706,19 @@ def main():
     snapshot_num = prev_num + 1
     print(f"快照編號: S{snapshot_num}")
 
-    # 1. 抓取數據
-    data = collect_all_data()
+    # 1. 優先讀取已抓取的市場數據（由gex_oracle_fetch.py生成）
+    market_data_path = "data/oracle_market_data.json"
+    if os.path.exists(market_data_path):
+        print(f"📂 讀取預抓取數據: {market_data_path}")
+        with open(market_data_path) as f:
+            data = json.load(f)
+        print(f"  Spot: ${data.get('spot', 0):,.0f}")
+        print(f"  FR: {data.get('fr', 0)*100:+.5f}%")
+        print(f"  L/S: {data.get('ls', 0):.4f}")
+        print(f"  DVOL: {data.get('dvol', 46):.2f}%")
+    else:
+        print("📡 開始即時抓取數據...")
+        data = collect_all_data()
 
     # 2. UFT計算
     uft_result = calc_uft(data, prev_data)
