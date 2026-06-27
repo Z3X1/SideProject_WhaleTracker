@@ -1,136 +1,44 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<meta http-equiv="refresh" content="21600">
-<title>GEX Oracle S23 | Auto</title>
+<title>GEX Oracle</title>
 <style>
-:root{--bg:#0a0e17;--panel:#111827;--border:#1e293b;--accent:#3b82f6;--green:#10b981;--red:#ef4444;--yellow:#f59e0b;--purple:#8b5cf6;--cyan:#06b6d4;--text:#e2e8f0;--muted:#64748b}
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:'SF Mono','Consolas',monospace;font-size:12px}
-.header{background:linear-gradient(135deg,#0f172a,#1e1b4b);border-bottom:2px solid var(--accent);padding:14px 20px;display:flex;justify-content:space-between;align-items:center}
-.header h1{font-size:18px;color:var(--accent);letter-spacing:2px}
-.spot{font-size:28px;font-weight:bold;color:var(--yellow)}
-.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:14px}
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 14px 14px}
-.card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:12px}
-.card-title{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:5px}
-.kpi{text-align:center}
-.kpi-val{font-size:20px;font-weight:bold}
-.kpi-lbl{font-size:9px;color:var(--muted);margin-top:2px}
-.kpi-delta{font-size:10px;margin-top:3px}
-.bull{color:var(--green)}.bear{color:var(--red)}.neutral{color:var(--yellow)}.info{color:var(--cyan)}
-.alert{border-radius:6px;padding:8px 12px;margin:0 14px 10px;font-size:11px;display:flex;align-items:flex-start;gap:8px}
-.alert-info{background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.4)}
-.alert-warn{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.4)}
-.settlement-box{background:linear-gradient(135deg,rgba(59,130,246,.1),rgba(139,92,246,.1));border:2px solid var(--accent);border-radius:10px;padding:14px;text-align:center;margin:14px}
-.settlement-main{font-size:32px;font-weight:bold;color:var(--yellow)}
-.auto-badge{background:rgba(16,185,129,.2);color:var(--green);padding:2px 8px;border-radius:10px;font-size:9px;font-weight:bold}
-.insight-box{background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.3);border-radius:6px;padding:10px;margin:0 14px 10px;font-size:11px;line-height:1.7}
-hr{border:none;border-top:1px solid var(--border);margin:8px 0}
+body{background:#0a0e17;color:#e2e8f0;font-family:monospace;display:flex;justify-content:center;align-items:center;height:100vh;margin:0}
+.box{text-align:center;padding:40px;border:1px solid #1e293b;border-radius:12px;background:#111827}
+h2{color:#3b82f6;margin-bottom:20px;letter-spacing:3px}
+input{background:#0a0e17;border:1px solid #3b82f6;color:#e2e8f0;padding:10px 20px;border-radius:6px;font-size:16px;width:200px;text-align:center}
+button{background:#3b82f6;color:white;border:none;padding:10px 30px;border-radius:6px;font-size:14px;cursor:pointer;margin-top:12px;display:block;width:100%}
+.err{color:#ef4444;margin-top:10px;font-size:12px}
 </style>
 </head>
 <body>
-
-<div class="header">
-  <div>
-    <h1>⚡ GEX ORACLE AUTO <span class="auto-badge">S23</span></h1>
-    <div style="color:var(--muted);font-size:10px;margin-top:2px">UFT v2.0 自動化 ｜ 2026-06-27 12:10 UTC+8</div>
-  </div>
-  <div style="text-align:right">
-    <div style="font-size:10px;color:var(--muted)">BTC/USDT 永續</div>
-    <div class="spot">$60,329</div>
-    <div style="font-size:10px;color:var(--green)">FR +0.00393% ｜ DVOL 52.22%</div>
-  </div>
+<div class="box">
+<h2>⚡ GEX ORACLE</h2>
+<input type="password" id="pw" placeholder="Password" onkeydown="if(event.key==='Enter')check()">
+<button onclick="check()">Enter</button>
+<div class="err" id="err"></div>
 </div>
-
-<div class="alert alert-info" style="margin-top:10px">
-  <span>⚡</span>
-  <span><strong>Oracle裁決：N/A</strong> ｜ σ(3JUL26)=$4,363 ｜ UFT Median=$60,452</span>
-</div>
-
-<div class="alert" style="margin:0 14px 10px;background:rgba(245,158,11,.1);border:1px solid var(--green);border-radius:6px;padding:8px 12px;font-size:11px;display:flex;gap:8px;align-items:center">
-  <span style="color:var(--green)">✅ Rule#15：信號一致，全權重</span>
-</div>
-
-<div class="grid-4">
-  <div class="card kpi">
-    <div class="kpi-val" style="color:var(--yellow)">$60,329</div>
-    <div class="kpi-lbl">SPOT</div>
-  </div>
-  <div class="card kpi">
-    <div class="kpi-val" style="color:var(--green)">+0.00393%</div>
-    <div class="kpi-lbl">資金費率 FR</div>
-  </div>
-  <div class="card kpi">
-    <div class="kpi-val neutral">2.0000</div>
-    <div class="kpi-lbl">大戶多空比 L/S</div>
-  </div>
-  <div class="card kpi">
-    <div class="kpi-val neutral">3.18萬</div>
-    <div class="kpi-lbl">持倉量 OI</div>
-  </div>
-</div>
-
-<div class="grid-2">
-  <div>
-    <div class="card" style="margin-bottom:10px">
-      <div class="card-title">📈 三框架 MACD</div>
-      <div style="font-size:10px;line-height:2">
-        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)">
-          <span class="info">15min (30%)</span>
-          <span style="color:var(--red);font-weight:bold">死叉 -20.46</span>
-          <span style="color:var(--muted)">DIF +57.5</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)">
-          <span class="info">4h (62%)</span>
-          <span style="color:var(--green);font-weight:bold">金叉 +274.61</span>
-          <span style="color:var(--muted)">DIF -678.9</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;padding:4px 0">
-          <span class="info">1D (70%)</span>
-          <span style="color:var(--red);font-weight:bold">死叉 -4.11</span>
-          <span style="color:var(--muted)">DIF -2295.2</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">🎯 GEX結構</div>
-      <div style="font-size:10px;line-height:2">
-        <div>GEX Pin (3JUL26): <strong>$60,329.135</strong></div>
-        <div>PCR: <strong>1.000</strong></div>
-        <div>Spot vs Pin: <strong>+0</strong></div>
-      </div>
-    </div>
-  </div>
-
-  <div>
-    <div class="card">
-      <div class="card-title">⚗️ UFT v2.0 分解</div>
-      <div style="font-size:10px;line-height:2;font-family:monospace">
-        <div>GBM(×0.40) = $24,219</div>
-        <div>GEX(×0.10) = $6,033</div>
-        <div>Behavior(×0.28) = $16,950</div>
-        <div>Bayesian(×0.12) = $7,218</div>
-        <div>TimeDecay(×0.10) = $6,033</div>
-        <hr>
-        <div style="font-size:13px;color:var(--yellow);font-weight:bold">Median = $60,452</div>
-        <div style="color:var(--muted)">Mode = $60,329.135 | EMH = $60,329.135</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="insight-box">
-  <strong style="color:var(--purple)">💡 Oracle洞察：</strong>Claude API未啟用
-  
-</div>
-
-<div style="text-align:center;padding:10px;color:var(--muted);font-size:10px">
-  自動生成 ｜ GEX Oracle v2.0 ｜ 每6h更新 ｜ 非投資建議
-</div>
-
+<script>
+const HASH="3ac22acab4270f1d078564ef14475d2ad239398b61104e839cb73b7c1f65eb63";
+const DATA="PCFET0NUWVBFIGh0bWw+CjxodG1sIGxhbmc9InpoLVRXIj4KPGhlYWQ+CjxtZXRhIGNoYXJzZXQ9IlVURi04Ij4KPG1ldGEgbmFtZT0idmlld3BvcnQiIGNvbnRlbnQ9IndpZHRoPWRldmljZS13aWR0aCxpbml0aWFsLXNjYWxlPTEuMCI+CjxtZXRhIGh0dHAtZXF1aXY9InJlZnJlc2giIGNvbnRlbnQ9IjIxNjAwIj4KPHRpdGxlPkdFWCBPcmFjbGUgUzIzIHwgQXV0bzwvdGl0bGU+CjxzdHlsZT4KOnJvb3R7LS1iZzojMGEwZTE3Oy0tcGFuZWw6IzExMTgyNzstLWJvcmRlcjojMWUyOTNiOy0tYWNjZW50OiMzYjgyZjY7LS1ncmVlbjojMTBiOTgxOy0tcmVkOiNlZjQ0NDQ7LS15ZWxsb3c6I2Y1OWUwYjstLXB1cnBsZTojOGI1Y2Y2Oy0tY3lhbjojMDZiNmQ0Oy0tdGV4dDojZTJlOGYwOy0tbXV0ZWQ6IzY0NzQ4Yn0KKntib3gtc2l6aW5nOmJvcmRlci1ib3g7bWFyZ2luOjA7cGFkZGluZzowfQpib2R5e2JhY2tncm91bmQ6dmFyKC0tYmcpO2NvbG9yOnZhcigtLXRleHQpO2ZvbnQtZmFtaWx5OidTRiBNb25vJywnQ29uc29sYXMnLG1vbm9zcGFjZTtmb250LXNpemU6MTJweH0KLmhlYWRlcntiYWNrZ3JvdW5kOmxpbmVhci1ncmFkaWVudCgxMzVkZWcsIzBmMTcyYSwjMWUxYjRiKTtib3JkZXItYm90dG9tOjJweCBzb2xpZCB2YXIoLS1hY2NlbnQpO3BhZGRpbmc6MTRweCAyMHB4O2Rpc3BsYXk6ZmxleDtqdXN0aWZ5LWNvbnRlbnQ6c3BhY2UtYmV0d2VlbjthbGlnbi1pdGVtczpjZW50ZXJ9Ci5oZWFkZXIgaDF7Zm9udC1zaXplOjE4cHg7Y29sb3I6dmFyKC0tYWNjZW50KTtsZXR0ZXItc3BhY2luZzoycHh9Ci5zcG90e2ZvbnQtc2l6ZToyOHB4O2ZvbnQtd2VpZ2h0OmJvbGQ7Y29sb3I6dmFyKC0teWVsbG93KX0KLmdyaWQtNHtkaXNwbGF5OmdyaWQ7Z3JpZC10ZW1wbGF0ZS1jb2x1bW5zOnJlcGVhdCg0LDFmcik7Z2FwOjEwcHg7cGFkZGluZzoxNHB4fQouZ3JpZC0ye2Rpc3BsYXk6Z3JpZDtncmlkLXRlbXBsYXRlLWNvbHVtbnM6MWZyIDFmcjtnYXA6MTJweDtwYWRkaW5nOjAgMTRweCAxNHB4fQouY2FyZHtiYWNrZ3JvdW5kOnZhcigtLXBhbmVsKTtib3JkZXI6MXB4IHNvbGlkIHZhcigtLWJvcmRlcik7Ym9yZGVyLXJhZGl1czo4cHg7cGFkZGluZzoxMnB4fQouY2FyZC10aXRsZXtmb250LXNpemU6MTBweDtjb2xvcjp2YXIoLS1tdXRlZCk7dGV4dC10cmFuc2Zvcm06dXBwZXJjYXNlO2xldHRlci1zcGFjaW5nOjFweDttYXJnaW4tYm90dG9tOjhweDtib3JkZXItYm90dG9tOjFweCBzb2xpZCB2YXIoLS1ib3JkZXIpO3BhZGRpbmctYm90dG9tOjVweH0KLmtwaXt0ZXh0LWFsaWduOmNlbnRlcn0KLmtwaS12YWx7Zm9udC1zaXplOjIwcHg7Zm9udC13ZWlnaHQ6Ym9sZH0KLmtwaS1sYmx7Zm9udC1zaXplOjlweDtjb2xvcjp2YXIoLS1tdXRlZCk7bWFyZ2luLXRvcDoycHh9Ci5rcGktZGVsdGF7Zm9udC1zaXplOjEwcHg7bWFyZ2luLXRvcDozcHh9Ci5idWxse2NvbG9yOnZhcigtLWdyZWVuKX0uYmVhcntjb2xvcjp2YXIoLS1yZWQpfS5uZXV0cmFse2NvbG9yOnZhcigtLXllbGxvdyl9LmluZm97Y29sb3I6dmFyKC0tY3lhbil9Ci5hbGVydHtib3JkZXItcmFkaXVzOjZweDtwYWRkaW5nOjhweCAxMnB4O21hcmdpbjowIDE0cHggMTBweDtmb250LXNpemU6MTFweDtkaXNwbGF5OmZsZXg7YWxpZ24taXRlbXM6ZmxleC1zdGFydDtnYXA6OHB4fQouYWxlcnQtaW5mb3tiYWNrZ3JvdW5kOnJnYmEoNTksMTMwLDI0NiwuMTUpO2JvcmRlcjoxcHggc29saWQgcmdiYSg1OSwxMzAsMjQ2LC40KX0KLmFsZXJ0LXdhcm57YmFja2dyb3VuZDpyZ2JhKDI0NSwxNTgsMTEsLjE1KTtib3JkZXI6MXB4IHNvbGlkIHJnYmEoMjQ1LDE1OCwxMSwuNCl9Ci5zZXR0bGVtZW50LWJveHtiYWNrZ3JvdW5kOmxpbmVhci1ncmFkaWVudCgxMzVkZWcscmdiYSg1OSwxMzAsMjQ2LC4xKSxyZ2JhKDEzOSw5MiwyNDYsLjEpKTtib3JkZXI6MnB4IHNvbGlkIHZhcigtLWFjY2VudCk7Ym9yZGVyLXJhZGl1czoxMHB4O3BhZGRpbmc6MTRweDt0ZXh0LWFsaWduOmNlbnRlcjttYXJnaW46MTRweH0KLnNldHRsZW1lbnQtbWFpbntmb250LXNpemU6MzJweDtmb250LXdlaWdodDpib2xkO2NvbG9yOnZhcigtLXllbGxvdyl9Ci5hdXRvLWJhZGdle2JhY2tncm91bmQ6cmdiYSgxNiwxODUsMTI5LC4yKTtjb2xvcjp2YXIoLS1ncmVlbik7cGFkZGluZzoycHggOHB4O2JvcmRlci1yYWRpdXM6MTBweDtmb250LXNpemU6OXB4O2ZvbnQtd2VpZ2h0OmJvbGR9Ci5pbnNpZ2h0LWJveHtiYWNrZ3JvdW5kOnJnYmEoMTM5LDkyLDI0NiwuMDgpO2JvcmRlcjoxcHggc29saWQgcmdiYSgxMzksOTIsMjQ2LC4zKTtib3JkZXItcmFkaXVzOjZweDtwYWRkaW5nOjEwcHg7bWFyZ2luOjAgMTRweCAxMHB4O2ZvbnQtc2l6ZToxMXB4O2xpbmUtaGVpZ2h0OjEuN30KaHJ7Ym9yZGVyOm5vbmU7Ym9yZGVyLXRvcDoxcHggc29saWQgdmFyKC0tYm9yZGVyKTttYXJnaW46OHB4IDB9Cjwvc3R5bGU+CjwvaGVhZD4KPGJvZHk+Cgo8ZGl2IGNsYXNzPSJoZWFkZXIiPgogIDxkaXY+CiAgICA8aDE+4pqhIEdFWCBPUkFDTEUgQVVUTyA8c3BhbiBjbGFzcz0iYXV0by1iYWRnZSI+UzIzPC9zcGFuPjwvaDE+CiAgICA8ZGl2IHN0eWxlPSJjb2xvcjp2YXIoLS1tdXRlZCk7Zm9udC1zaXplOjEwcHg7bWFyZ2luLXRvcDoycHgiPlVGVCB2Mi4wIOiHquWLleWMliDvvZwgMjAyNi0wNi0yNyAxMzo1OSBVVEMrODwvZGl2PgogIDwvZGl2PgogIDxkaXYgc3R5bGU9InRleHQtYWxpZ246cmlnaHQiPgogICAgPGRpdiBzdHlsZT0iZm9udC1zaXplOjEwcHg7Y29sb3I6dmFyKC0tbXV0ZWQpIj5CVEMvVVNEVCDmsLjnuow8L2Rpdj4KICAgIDxkaXYgY2xhc3M9InNwb3QiPiQ2MCw0NzY8L2Rpdj4KICAgIDxkaXYgc3R5bGU9ImZvbnQtc2l6ZToxMHB4O2NvbG9yOnZhcigtLWdyZWVuKSI+RlIgKzAuMDA1OTklIO+9nCBEVk9MIDUyLjA4JTwvZGl2PgogIDwvZGl2Pgo8L2Rpdj4KCjxkaXYgY2xhc3M9ImFsZXJ0IGFsZXJ0LWluZm8iIHN0eWxlPSJtYXJnaW4tdG9wOjEwcHgiPgogIDxzcGFuPuKaoTwvc3Bhbj4KICA8c3Bhbj48c3Ryb25nPk9yYWNsZeijgeaxuu+8mk4vQTwvc3Ryb25nPiDvvZwgz4MoM0pVTDI2KT0kNCwzNjIg772cIFVGVCBNZWRpYW49JDYwLDY4Nzwvc3Bhbj4KPC9kaXY+Cgo8ZGl2IGNsYXNzPSJhbGVydCIgc3R5bGU9Im1hcmdpbjowIDE0cHggMTBweDtiYWNrZ3JvdW5kOnJnYmEoMjQ1LDE1OCwxMSwuMSk7Ym9yZGVyOjFweCBzb2xpZCB2YXIoLS1ncmVlbik7Ym9yZGVyLXJhZGl1czo2cHg7cGFkZGluZzo4cHggMTJweDtmb250LXNpemU6MTFweDtkaXNwbGF5OmZsZXg7Z2FwOjhweDthbGlnbi1pdGVtczpjZW50ZXIiPgogIDxzcGFuIHN0eWxlPSJjb2xvcjp2YXIoLS1ncmVlbikiPuKchSBSdWxlIzE177ya5L+h6Jmf5LiA6Ie077yM5YWo5qyK6YeNPC9zcGFuPgo8L2Rpdj4KCjxkaXYgY2xhc3M9ImdyaWQtNCI+CiAgPGRpdiBjbGFzcz0iY2FyZCBrcGkiPgogICAgPGRpdiBjbGFzcz0ia3BpLXZhbCIgc3R5bGU9ImNvbG9yOnZhcigtLXllbGxvdykiPiQ2MCw0NzY8L2Rpdj4KICAgIDxkaXYgY2xhc3M9ImtwaS1sYmwiPlNQT1Q8L2Rpdj4KICA8L2Rpdj4KICA8ZGl2IGNsYXNzPSJjYXJkIGtwaSI+CiAgICA8ZGl2IGNsYXNzPSJrcGktdmFsIiBzdHlsZT0iY29sb3I6dmFyKC0tZ3JlZW4pIj4rMC4wMDU5OSU8L2Rpdj4KICAgIDxkaXYgY2xhc3M9ImtwaS1sYmwiPuizh+mHkeiyu+eOhyBGUjwvZGl2PgogIDwvZGl2PgogIDxkaXYgY2xhc3M9ImNhcmQga3BpIj4KICAgIDxkaXYgY2xhc3M9ImtwaS12YWwgbmV1dHJhbCI+Mi4wMDAwPC9kaXY+CiAgICA8ZGl2IGNsYXNzPSJrcGktbGJsIj7lpKfmiLblpJrnqbrmr5QgTC9TPC9kaXY+CiAgPC9kaXY+CiAgPGRpdiBjbGFzcz0iY2FyZCBrcGkiPgogICAgPGRpdiBjbGFzcz0ia3BpLXZhbCBuZXV0cmFsIj4zLjE46JCsPC9kaXY+CiAgICA8ZGl2IGNsYXNzPSJrcGktbGJsIj7mjIHlgInph48gT0k8L2Rpdj4KICA8L2Rpdj4KPC9kaXY+Cgo8ZGl2IGNsYXNzPSJncmlkLTIiPgogIDxkaXY+CiAgICA8ZGl2IGNsYXNzPSJjYXJkIiBzdHlsZT0ibWFyZ2luLWJvdHRvbToxMHB4Ij4KICAgICAgPGRpdiBjbGFzcz0iY2FyZC10aXRsZSI+8J+TiCDkuInmoYbmnrYgTUFDRDwvZGl2PgogICAgICA8ZGl2IHN0eWxlPSJmb250LXNpemU6MTBweDtsaW5lLWhlaWdodDoyIj4KICAgICAgICA8ZGl2IHN0eWxlPSJkaXNwbGF5OmZsZXg7anVzdGlmeS1jb250ZW50OnNwYWNlLWJldHdlZW47cGFkZGluZzo0cHggMDtib3JkZXItYm90dG9tOjFweCBzb2xpZCB2YXIoLS1ib3JkZXIpIj4KICAgICAgICAgIDxzcGFuIGNsYXNzPSJpbmZvIj4xNW1pbiAoMzAlKTwvc3Bhbj4KICAgICAgICAgIDxzcGFuIHN0eWxlPSJjb2xvcjp2YXIoLS1ncmVlbik7Zm9udC13ZWlnaHQ6Ym9sZCI+6YeR5Y+JICs0MS4xMzwvc3Bhbj4KICAgICAgICAgIDxzcGFuIHN0eWxlPSJjb2xvcjp2YXIoLS1tdXRlZCkiPkRJRiArNDcuMDwvc3Bhbj4KICAgICAgICA8L2Rpdj4KICAgICAgICA8ZGl2IHN0eWxlPSJkaXNwbGF5OmZsZXg7anVzdGlmeS1jb250ZW50OnNwYWNlLWJldHdlZW47cGFkZGluZzo0cHggMDtib3JkZXItYm90dG9tOjFweCBzb2xpZCB2YXIoLS1ib3JkZXIpIj4KICAgICAgICAgIDxzcGFuIGNsYXNzPSJpbmZvIj40aCAoNjIlKTwvc3Bhbj4KICAgICAgICAgIDxzcGFuIHN0eWxlPSJjb2xvcjp2YXIoLS1ncmVlbik7Zm9udC13ZWlnaHQ6Ym9sZCI+6YeR5Y+JICszMjIuMjU8L3NwYW4+CiAgICAgICAgICA8c3BhbiBzdHlsZT0iY29sb3I6dmFyKC0tbXV0ZWQpIj5ESUYgLTYxNS45PC9zcGFuPgogICAgICAgIDwvZGl2PgogICAgICAgIDxkaXYgc3R5bGU9ImRpc3BsYXk6ZmxleDtqdXN0aWZ5LWNvbnRlbnQ6c3BhY2UtYmV0d2VlbjtwYWRkaW5nOjRweCAwIj4KICAgICAgICAgIDxzcGFuIGNsYXNzPSJpbmZvIj4xRCAoNzAlKTwvc3Bhbj4KICAgICAgICAgIDxzcGFuIHN0eWxlPSJjb2xvcjp2YXIoLS1ncmVlbik7Zm9udC13ZWlnaHQ6Ym9sZCI+6YeR5Y+JICsxNy4xNjwvc3Bhbj4KICAgICAgICAgIDxzcGFuIHN0eWxlPSJjb2xvcjp2YXIoLS1tdXRlZCkiPkRJRiAtMjI4MS45PC9zcGFuPgogICAgICAgIDwvZGl2PgogICAgICA8L2Rpdj4KICAgIDwvZGl2PgoKICAgIDxkaXYgY2xhc3M9ImNhcmQiPgogICAgICA8ZGl2IGNsYXNzPSJjYXJkLXRpdGxlIj7wn46vIEdFWOe1kOanizwvZGl2PgogICAgICA8ZGl2IHN0eWxlPSJmb250LXNpemU6MTBweDtsaW5lLWhlaWdodDoyIj4KICAgICAgICA8ZGl2PkdFWCBQaW4gKDNKVUwyNik6IDxzdHJvbmc+JDYwLDQ3NS45MjU8L3N0cm9uZz48L2Rpdj4KICAgICAgICA8ZGl2PlBDUjogPHN0cm9uZz4xLjAwMDwvc3Ryb25nPjwvZGl2PgogICAgICAgIDxkaXY+U3BvdCB2cyBQaW46IDxzdHJvbmc+KzA8L3N0cm9uZz48L2Rpdj4KICAgICAgPC9kaXY+CiAgICA8L2Rpdj4KICA8L2Rpdj4KCiAgPGRpdj4KICAgIDxkaXYgY2xhc3M9ImNhcmQiPgogICAgICA8ZGl2IGNsYXNzPSJjYXJkLXRpdGxlIj7impfvuI8gVUZUIHYyLjAg5YiG6KejPC9kaXY+CiAgICAgIDxkaXYgc3R5bGU9ImZvbnQtc2l6ZToxMHB4O2xpbmUtaGVpZ2h0OjI7Zm9udC1mYW1pbHk6bW9ub3NwYWNlIj4KICAgICAgICA8ZGl2PkdCTSjDlzAuNDApID0gJDI0LDI3ODwvZGl2PgogICAgICAgIDxkaXY+R0VYKMOXMC4xMCkgPSAkNiwwNDg8L2Rpdj4KICAgICAgICA8ZGl2PkJlaGF2aW9yKMOXMC4yOCkgPSAkMTcsMDIxPC9kaXY+CiAgICAgICAgPGRpdj5CYXllc2lhbijDlzAuMTIpID0gJDcsMjkzPC9kaXY+CiAgICAgICAgPGRpdj5UaW1lRGVjYXkow5cwLjEwKSA9ICQ2LDA0ODwvZGl2PgogICAgICAgIDxocj4KICAgICAgICA8ZGl2IHN0eWxlPSJmb250LXNpemU6MTNweDtjb2xvcjp2YXIoLS15ZWxsb3cpO2ZvbnQtd2VpZ2h0OmJvbGQiPk1lZGlhbiA9ICQ2MCw2ODc8L2Rpdj4KICAgICAgICA8ZGl2IHN0eWxlPSJjb2xvcjp2YXIoLS1tdXRlZCkiPk1vZGUgPSAkNjAsNDc1LjkyNSB8IEVNSCA9ICQ2MCw0NzUuOTI1PC9kaXY+CiAgICAgIDwvZGl2PgogICAgPC9kaXY+CiAgPC9kaXY+CjwvZGl2PgoKPGRpdiBjbGFzcz0iaW5zaWdodC1ib3giPgogIDxzdHJvbmcgc3R5bGU9ImNvbG9yOnZhcigtLXB1cnBsZSkiPvCfkqEgT3JhY2xl5rSe5a+f77yaPC9zdHJvbmc+Q2xhdWRlIEFQSeacquWVn+eUqAogIAo8L2Rpdj4KCjxkaXYgc3R5bGU9InRleHQtYWxpZ246Y2VudGVyO3BhZGRpbmc6MTBweDtjb2xvcjp2YXIoLS1tdXRlZCk7Zm9udC1zaXplOjEwcHgiPgogIOiHquWLleeUn+aIkCDvvZwgR0VYIE9yYWNsZSB2Mi4wIO+9nCDmr482aOabtOaWsCDvvZwg6Z2e5oqV6LOH5bu66K2wCjwvZGl2PgoKPC9ib2R5Pgo8L2h0bWw+";
+async function sha256(s){
+  const b=new TextEncoder().encode(s);
+  const h=await crypto.subtle.digest('SHA-256',b);
+  return Array.from(new Uint8Array(h)).map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+async function check(){
+  const pw=document.getElementById('pw').value;
+  const h=await sha256(pw);
+  if(h===HASH){
+    document.open();
+    document.write(atob(DATA));
+    document.close();
+  }else{
+    document.getElementById('err').textContent='Wrong password';
+    document.getElementById('pw').value='';
+  }
+}
+</script>
 </body>
 </html>
