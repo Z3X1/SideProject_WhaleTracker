@@ -642,7 +642,7 @@ td:first-child{text-align:center;font-weight:bold;color:var(--cyan)}
 <div class="g4">
   <div class="card"><div class="kv" style="color:var(--yel)">$""" + f"{spot:,.0f}" + """</div><div class="kl">SPOT</div></div>
   <div class="card"><div class="kv" style="color:""" + fr_col + """">""" + fr_sign + f"{fr:.5f}" + """%</div><div class="kl">FUNDING RATE</div></div>
-  <div class="card"><div class="kv" style="color:" + skew0_col + "">" + skew0_str + "</div><div class="kl">SKEW (" + exp0 + ")</div></div>
+  <div class="card"><div class="kv" style="color:""" + skew0_col + """">""" + skew0_str + """</div><div class="kl">SKEW (""" + exp0 + """)</div></div>
   <div class="card"><div class="kv" style="color:var(--mut)">""" + f"{oi:.2f}" + """w</div><div class="kl">OPEN INTEREST</div></div>
 </div>
 
