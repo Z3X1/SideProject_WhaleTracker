@@ -283,14 +283,30 @@ def calc_uft(data, prev_data=None):
     fr_strength = min(abs(fr) / 0.0001, 1.0)
     # Skew信號（正skew=偏空，負skew=偏多）
     skew_signal = -1 if skew_main > 2 else (1 if skew_main < -2 else 0)
-    # PCR信號（PCR>1=偏空，PCR<0.7=偏多）
-    pcr_val = data.get("options", {}).get(expiries[0] if expiries else "3JUL26", {})
-    tc = sum(float(v.get("call_oi",0)) for v in pcr_val.values()) if pcr_val else 1
-    tp = sum(float(v.get("put_oi",0)) for v in pcr_val.values()) if pcr_val else 1
-    pcr_ratio = tp/tc if tc > 0 else 1
-    pcr_signal = -1 if pcr_ratio > 1.2 else (1 if pcr_ratio < 0.7 else 0)
-    # 合成行為信號
-    raw_signal = (fr_signal * fr_strength * 0.5 + skew_signal * 0.3 + pcr_signal * 0.2)
+    # PCR ATM信號（更精確：用ATM PCR而非全局PCR）
+    exp_main = expiries[0] if expiries else "3JUL26"
+    pcr_atm = data.get(f"pcr_atm_{exp_main}", 0)
+    pcr_otm = data.get(f"pcr_otm_{exp_main}", 0)
+    # ATM PCR更能反映即時方向
+    pcr_use = pcr_atm if pcr_atm > 0 else (pcr_ratio := sum(float(v.get("put_oi",0)) for v in data.get("options",{}).get(exp_main,{}).values()) / max(sum(float(v.get("call_oi",0)) for v in data.get("options",{}).get(exp_main,{}).values()), 1))
+    pcr_signal = -1 if pcr_use > 1.3 else (1 if pcr_use < 0.6 else 0)
+
+    # OI變化方向（新增信號）
+    oi_change = float(data.get("oi_change", 0) or 0)
+    oi_signal = 0
+    if abs(oi_change) > 0.1:  # 顯著變化
+        oi_signal = -1 if oi_change > 0 else 1  # OI增加+FR正=空頭主導（已處理FR方向）
+
+    # Perp Basis（新增信號）
+    basis_pct = float(data.get("perp_basis_pct", 0) or 0)
+    basis_signal = 1 if basis_pct > 0.05 else (-1 if basis_pct < -0.05 else 0)
+
+    # 合成行為信號（加入OI變化和Basis）
+    raw_signal = (fr_signal * fr_strength * 0.40
+                + skew_signal * 0.25
+                + pcr_signal * 0.20
+                + oi_signal * 0.10
+                + basis_signal * 0.05)
     # 矛盾檢測：FR多但Skew強烈偏空
     contradiction = (fr_signal > 0 and skew_main > 5) or (fr_signal < 0 and skew_main < -5)
     weight = 0.5 if contradiction else 1.0
@@ -703,6 +719,7 @@ td:first-child{text-align:center;font-weight:bold;color:var(--cyan)}
     <div style="font-size:9px;color:var(--mut)">BTC/USDT PERP | Regime: <span style="color:""" + regime_col + """;font-weight:bold">""" + regime + """</span> | GF: $""" + f"{gf_main:,}" + """ | """ + countdown_str + """</div>
     <div class="spot">$""" + f"{spot:,.0f}" + """</div>
     <div style="font-size:10px;color:""" + fr_col + """">FR """ + fr_sign + f"{fr:.5f}" + """% | DVOL """ + f"{dvol:.2f}" + """%</div>
+    <div style="font-size:9px;color:var(--mut)">OI """ + f"{oi:.2f}" + """w """ + (f"({data.get('oi_change',0):+.3f}w {data.get('oi_change_pct',0):+.1f}%)" if data.get('oi_change') is not None else "") + """ | Basis """ + (f"${data.get('perp_basis',0):+.0f} ({data.get('perp_basis_pct',0):+.3f}%)" if data.get('perp_basis') is not None else "N/A") + """</div>
   </div>
 </div>
 
@@ -724,6 +741,11 @@ td:first-child{text-align:center;font-weight:bold;color:var(--cyan)}
     <div class="row"><span style="color:var(--cyan)">15m (30%)</span><span style="color:""" + c15 + """">""" + s15 + " " + f"{m15:+.2f}" + """</span><span style="color:var(--mut)">""" + f"{d15:+.0f}" + """</span></div>
     <div class="row"><span style="color:var(--cyan)">4h (62%)</span><span style="color:""" + c4h + """">""" + s4h + " " + f"{m4h:+.2f}" + """</span><span style="color:var(--mut)">""" + f"{d4h:+.0f}" + """</span></div>
     <div class="row"><span style="color:var(--cyan)">1D (70%)</span><span style="color:""" + c1d + """">""" + s1d + " " + f"{m1d:+.2f}" + """</span><span style="color:var(--mut)">""" + f"{d1d:+.0f}" + """</span></div>
+    <div style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px">
+    <div class="row"><span style="color:var(--mut)">ATM IV (__EXP0__)</span><span style="color:var(--pur)">""" + f"{data.get('atm_iv_'+exp0, dvol):.2f}" + """%</span></div>
+    <div class="row"><span style="color:var(--mut)">DVOL Index</span><span style="color:var(--pur)">""" + f"{dvol:.2f}" + """%</span></div>
+    <div class="row"><span style="color:var(--mut)">IV Premium</span><span style="color:var(--pur)">""" + f"{data.get('atm_iv_'+exp0, dvol) - dvol:+.2f}" + """%</span></div>
+    </div>
   </div>
   <div class="card">
     <div class="ct">UFT v2.0 Equation</div>
@@ -756,9 +778,11 @@ td:first-child{text-align:center;font-weight:bold;color:var(--cyan)}
       <div class="row"><span>Gamma Flip (__EXP0__)</span><span style="color:var(--yel)">$__GF0__</span></div>
       <div class="row"><span>Spot vs GF</span><span style="color:""" + regime_col + """">__SPOTGF__</span></div>
       <div class="row"><span>GEX Pin (__EXP0__)</span><span style="color:var(--yel)">$""" + f"{uft_mode:,.0f}" + """</span></div>
-      <div class="row"><span>PCR __EXP0__ (C""" + f"{tc0:.0f}" + """/P""" + f"{tp0:.0f}" + """)</span><span>""" + f"{pcr0:.3f}" + """</span></div>
-      <div class="row"><span>PCR __EXP1__ (C""" + f"{tc1:.0f}" + """/P""" + f"{tp1:.0f}" + """)</span><span>""" + f"{pcr1:.3f}" + """</span></div>
-      <div class="row"><span>PCR __EXP2__ (C""" + f"{tc2:.0f}" + """/P""" + f"{tp2:.0f}" + """)</span><span>""" + f"{pcr2:.3f}" + """</span></div>
+      <div class="row"><span>PCR __EXP0__ Global</span><span>""" + f"{pcr0:.3f}" + """ (C""" + f"{tc0:.0f}" + """/P""" + f"{tp0:.0f}" + """)</span></div>
+      <div class="row"><span>PCR __EXP0__ ATM</span><span style="color:var(--cyan)">""" + f"{data.get('pcr_atm_'+exp0, pcr0):.3f}" + """</span></div>
+      <div class="row"><span>PCR __EXP0__ OTM</span><span>""" + f"{data.get('pcr_otm_'+exp0, 0):.3f}" + """</span></div>
+      <div class="row"><span>PCR __EXP1__</span><span>""" + f"{pcr1:.3f}" + """</span></div>
+      <div class="row"><span>PCR __EXP2__</span><span>""" + f"{pcr2:.3f}" + """</span></div>
       <div class="row"><span>Call Wall __EXP0__</span><span style="color:var(--green)">$""" + f"{cw0:,}" + """</span></div>
       <div class="row"><span>Put Wall __EXP0__</span><span style="color:var(--red)">$""" + f"{pw0:,}" + """</span></div>
       <div class="row"><span>Call Wall __EXP1__</span><span style="color:var(--green)">$""" + f"{cw1:,}" + """</span></div>
