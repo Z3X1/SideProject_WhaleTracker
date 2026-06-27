@@ -274,6 +274,7 @@ def calc_uft(data, prev_data=None):
     gex_center = gex["pin"]
 
     # BehaviorSignal成分（L/S已移除，用FR+PCR+Skew）
+    expiries = data.get("expiries", ["3JUL26","31JUL26","25SEP26"])
     fr = data.get("fr", 0)
     oi_change = (data.get("oi",0) - prev_data.get("oi",0)) if prev_data else 0
     skew_main = data.get("skew", {}).get(expiries[0] if expiries else "3JUL26", 0) or 0
