@@ -415,13 +415,33 @@ UFT計算結果：
             "https://api.anthropic.com/v1/messages",
             headers=headers, json=body, timeout=60
         )
-        text = r.json()["content"][0]["text"]
+        resp = r.json()
+        # 處理各種回應格式
+        if "error" in resp:
+            print(f"Claude API error: {resp['error']}")
+            return None
+        content_blocks = resp.get("content", [])
+        if not content_blocks:
+            print(f"Claude API: 空回應 {resp}")
+            return None
+        text = ""
+        for block in content_blocks:
+            if isinstance(block, dict) and block.get("type") == "text":
+                text += block.get("text", "")
+        if not text:
+            print(f"Claude API: 無text block")
+            return None
         # 清理JSON
         text = text.strip()
-        if text.startswith("```"):
-            text = text.split("```")[1]
-            if text.startswith("json"):
-                text = text[4:]
+        if "```" in text:
+            parts = text.split("```")
+            for part in parts:
+                part = part.strip()
+                if part.startswith("json"):
+                    part = part[4:].strip()
+                if part.startswith("{"):
+                    text = part
+                    break
         return json.loads(text.strip())
     except Exception as e:
         print(f"Claude API錯誤: {e}")
