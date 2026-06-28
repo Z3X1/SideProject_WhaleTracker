@@ -663,7 +663,7 @@ def send_telegram(data, uft_result, collision, snapshot_num):
     m1d_s="Bullish X" if macd_1d.get("dif",0)>macd_1d.get("dea",0) else "Bearish X"
     r15="[WARN] Contradictory(x0.5)" if contradiction else "[OK] Consistent(full)"
     msg=(f"[GEX Oracle S{snapshot_num}] Update\nSpot: ${spot:,.0f} | FR: {fr_pct:+.5f}%\n"
-         f"OI: {data.get(oi,0):.2f}w | DVOL: {data.get(dvol,0):.2f}%\n"
+         f"OI: {data.get("oi",0):.2f}w | DVOL: {data.get("dvol",0):.2f}%\n"
          f"UFT: ${uft_med:,.0f} | Oracle: {oracle}\n1D MACD: {m1d_s}\nInsight: {key_insight}")
     try:
         requests.post(f"https://api.telegram.org/bot{bot_token}/sendMessage",
