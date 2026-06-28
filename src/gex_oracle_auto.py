@@ -2,7 +2,7 @@ import json
 #!/usr/bin/env python3
 """
 GEX Oracle 自動化引擎 v2.0
-每6h自動執行：數據抓取 → UFT計算 → Claude碰撞 → HTML生成 → Telegram推送
+每6h自動執行:數據抓取 → UFT計算 → Claude碰撞 → HTML生成 → Telegram推送
 """
 
 import os, json, math, time, requests, sqlite3
@@ -31,7 +31,7 @@ def fetch_binance_fr():
     return float(d.get("lastFundingRate") or d.get("interestRate") or 0)
 
 def fetch_binance_oi():
-    """持倉量（萬張）"""
+    """持倉量(萬張)"""
     r = requests.get(
         "https://fapi.binance.com/fapi/v1/openInterest",
         params={"symbol": "BTCUSDT"}, timeout=10
@@ -56,7 +56,7 @@ def fetch_binance_ls():
         return float(r.json()[0]["longShortRatio"])
 
 def fetch_binance_klines(interval="4h", limit=100):
-    """K線數據（用於計算EMA/MACD）"""
+    """K線數據(用於計算EMA/MACD)"""
     r = requests.get(
         "https://fapi.binance.com/fapi/v1/klines",
         params={"symbol": "BTCUSDT", "interval": interval, "limit": limit},
@@ -105,7 +105,7 @@ def calc_macd(prices):
     return dif[-1], dea[-1], macd[-1]
 
 def fetch_deribit_dvol():
-    """DVOL（BTC期權隱含波動率指數）"""
+    """DVOL(BTC期權隱含波動率指數)"""
     r = requests.get(
         "https://www.deribit.com/api/v2/public/get_index",
         params={"currency": "BTC"}, timeout=10
@@ -128,7 +128,7 @@ def fetch_deribit_options(expiry_label):
     expiry_label: 例如 "3JUL26", "31JUL26", "25SEP26"
     返回: {strike: {call_oi, put_oi, call_iv, put_iv}}
     """
-    # Deribit到期日格式轉換（3JUL26 → 26JUL3 → 3JUL26格式）
+    # Deribit到期日格式轉換(3JUL26 → 26JUL3 → 3JUL26格式)
     r = requests.get(
         "https://www.deribit.com/api/v2/public/get_book_summary_by_currency",
         params={"currency": "BTC", "kind": "option"},
@@ -199,7 +199,7 @@ def collect_all_data():
     data["dvol"] = fetch_deribit_dvol()
     print(f"  DVOL: {data['dvol']:.2f}%")
 
-    # 期權鏈（三個到期日）
+    # 期權鏈(三個到期日)
     for expiry in ["3JUL26", "31JUL26", "25SEP26"]:
         try:
             opts = fetch_deribit_options(expiry)
@@ -218,16 +218,16 @@ def collect_all_data():
 # ============================================================
 
 def calc_gex_structure(options, spot):
-    """計算GEX Structure：Pin水位、PCR、Gamma Flip"""
+    """計算GEX Structure:Pin水位,PCR,Gamma Flip"""
     if not options:
         return {"pin": spot, "pcr": 1.0, "gamma_flip": spot - 2000}
 
-    # PCR（OI加權）
+    # PCR(OI加權)
     total_call_oi = sum(v["call_oi"] for v in options.values())
     total_put_oi = sum(v["put_oi"] for v in options.values())
     pcr = total_put_oi / total_call_oi if total_call_oi > 0 else 1.0
 
-    # ATM Put Wall（最大Put OI在Spot附近）
+    # ATM Put Wall(最大Put OI在Spot附近)
     atm_range = {k: v for k, v in options.items() if abs(k - spot) < 5000}
     if atm_range:
         max_put_strike = max(atm_range, key=lambda k: atm_range[k]["put_oi"])
@@ -273,7 +273,7 @@ def calc_uft(data, prev_data=None):
     gex = calc_gex_structure(opts_3jul, spot)
     gex_center = gex["pin"]
 
-    # BehaviorSignal成分（L/S已移除，用FR+PCR+Skew）
+    # BehaviorSignal成分(L/S已移除,用FR+PCR+Skew)
     expiries = data.get("expiries", ["3JUL26","31JUL26","25SEP26"])
     fr = data.get("fr", 0)
     oi_change = (data.get("oi",0) - prev_data.get("oi",0)) if prev_data else 0
@@ -281,9 +281,9 @@ def calc_uft(data, prev_data=None):
     # FR信號方向
     fr_signal = 1 if fr > 0 else -1
     fr_strength = min(abs(fr) / 0.0001, 1.0)
-    # Skew信號（正skew=偏空，負skew=偏多）
+    # Skew信號(正skew=偏空,負skew=偏多)
     skew_signal = -1 if skew_main > 2 else (1 if skew_main < -2 else 0)
-    # PCR ATM信號（更精確：用ATM PCR而非全局PCR）
+    # PCR ATM信號(更精確:用ATM PCR而非全局PCR)
     exp_main = expiries[0] if expiries else "3JUL26"
     pcr_atm = data.get(f"pcr_atm_{exp_main}", 0)
     pcr_otm = data.get(f"pcr_otm_{exp_main}", 0)
@@ -291,24 +291,24 @@ def calc_uft(data, prev_data=None):
     pcr_use = pcr_atm if pcr_atm > 0 else (pcr_ratio := sum(float(v.get("put_oi",0)) for v in data.get("options",{}).get(exp_main,{}).values()) / max(sum(float(v.get("call_oi",0)) for v in data.get("options",{}).get(exp_main,{}).values()), 1))
     pcr_signal = -1 if pcr_use > 1.3 else (1 if pcr_use < 0.6 else 0)
 
-    # OI變化方向（新增信號）
+    # OI變化方向(新增信號)
     oi_change = float(data.get("oi_change", 0) or 0)
     oi_signal = 0
     if abs(oi_change) > 0.1:  # 顯著變化
-        oi_signal = -1 if oi_change > 0 else 1  # OI增加+FR正=空頭主導（已處理FR方向）
+        oi_signal = -1 if oi_change > 0 else 1  # OI增加+FR正=空頭主導(已處理FR方向)
 
-    # Perp Basis（新增信號）
+    # Perp Basis(新增信號)
     basis_pct = float(data.get("perp_basis_pct", 0) or 0)
     basis_signal = 1 if basis_pct > 0.05 else (-1 if basis_pct < -0.05 else 0)
 
-    # WhaleTracker信號（從SQLite讀取近24h大額移動）
+    # WhaleTracker信號(從SQLite讀取近24h大額移動)
     whale_signal = 0
     try:
         import os as _osw, sqlite3 as _sq
         db_path = "data/whale_tracker.db"
         if _osw.path.exists(db_path):
             _conn = _sq.connect(db_path)
-            # 近24h的大額BTC淨流向（正=流入交易所=偏空，負=流出=偏多）
+            # 近24h的大額BTC淨流向(正=流入交易所=偏空,負=流出=偏多)
             _cur = _conn.execute("""
                 SELECT SUM(CASE WHEN direction='in' THEN amount ELSE -amount END)
                 FROM transfers
@@ -322,14 +322,14 @@ def calc_uft(data, prev_data=None):
                 whale_signal = -1 if _net > 500 else (1 if _net < -500 else 0)
     except: pass
 
-    # 合成行為信號（FR+Skew+PCR+OI+Basis+Whale）
+    # 合成行為信號(FR+Skew+PCR+OI+Basis+Whale)
     raw_signal = (fr_signal * fr_strength * 0.35
                 + skew_signal * 0.25
                 + pcr_signal * 0.20
                 + oi_signal * 0.10
                 + basis_signal * 0.05
                 + whale_signal * 0.05)
-    # 矛盾檢測：FR多但Skew強烈偏空
+    # 矛盾檢測:FR多但Skew強烈偏空
     contradiction = (fr_signal > 0 and skew_main > 5) or (fr_signal < 0 and skew_main < -5)
     weight = 0.5 if contradiction else 1.0
     behavior_raw = raw_signal * weight
@@ -348,7 +348,7 @@ def calc_uft(data, prev_data=None):
         gbm_bias -= 0.03
     gbm_center = spot + gbm_bias * sigma
 
-    # 貝葉斯成分（簡化）
+    # 貝葉斯成分(簡化)
     macd_1d = data["macd_1d"]["macd"]
     if macd_1d > 0:
         bayes_center = spot * 1.005  # 偏多
@@ -396,20 +396,20 @@ def calc_uft(data, prev_data=None):
 # 3. Claude API碰撞層
 # ============================================================
 
-UFT_SYSTEM_PROMPT = """你是GEX Oracle分析引擎，使用統一場論(UFT) v2.0對抗性碰撞框架分析BTC期權市場。
+UFT_SYSTEM_PROMPT = """你是GEX Oracle分析引擎,使用統一場論(UFT) v2.0對抗性碰撞框架分析BTC期權市場.
 
-核心規則：
-R#1 Put Wall三態：OTM(Gamma≈0)/ATM(最不穩定)/ITM(動態支撐)
-R#2 MACD壽命：15min≥6.5h/4h≥104h/1D≥26天。負值域Bullish X=0.5x
+核心規則:
+R#1 Put Wall三態:OTM(Gamma≈0)/ATM(最不穩定)/ITM(動態支撐)
+R#2 MACD壽命:15min≥6.5h/4h≥104h/1D≥26天.負值域Bullish X=0.5x
 R#5 FR穿越0%=最重要觸發信號
 R#10 POS Regime(Spot>GF)=穩定器/NEG(Spot<GF)=放大器
 R#14 主到期日結算後概率重置
-R#15 FR正+L/S同降=Contradictory Signal，BehaviorSignal x0.5
+R#15 FR正+L/S同降=Contradictory Signal,BehaviorSignal x0.5
 R#16 ≥3個到期日同一行權價最大Put OI=強力磁吸Pin
 
-UFT方程：P(X) = 0.40×GBM + 0.10×GEX + 0.28×BehaviorSignal + 0.12×Bayesian + 0.10×TimeDecay
+UFT方程:P(X) = 0.40×GBM + 0.10×GEX + 0.28×BehaviorSignal + 0.12×Bayesian + 0.10×TimeDecay
 
-輸出格式：JSON，包含以下欄位：
+輸出格式:JSON,包含以下欄位:
 {
   "layer1_bull": ["論點1", "論點2"],
   "layer1_bear": ["論點1", "論點2"],
@@ -427,13 +427,13 @@ UFT方程：P(X) = 0.40×GBM + 0.10×GEX + 0.28×BehaviorSignal + 0.12×Bayesian
   "key_insight": "本快照最重要的一句話洞察",
   "next_trigger": "最需要監控的下一個觸發條件"
 }
-只輸出JSON，不要其他文字。"""
+只輸出JSON,不要其他文字."""
 
 def call_claude_collision(data, uft_result):
     """呼叫Claude API進行對抗性碰撞"""
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
     if not api_key:
-        print("⚠️  未設置ANTHROPIC_API_KEY，跳過Claude碰撞")
+        print("⚠️  未設置ANTHROPIC_API_KEY,跳過Claude碰撞")
         return None
 
     # 構建輸入摘要
@@ -442,27 +442,27 @@ def call_claude_collision(data, uft_result):
     macd_1d = data["macd_1d"]
 
     user_prompt = f"""
-當前快照數據（UTC: {data['timestamp']}）：
+當前快照數據(UTC: {data['timestamp']}):
 
-基本數據：
+基本數據:
 - Spot: ${data['spot']:,.0f}
 - DVOL: {data['dvol']:.2f}%
-- FR: {data['fr']*100:+.5f}%（{'正值，Longs pay' if data['fr']>0 else '負值，Shorts pay'}）
+- FR: {data['fr']*100:+.5f}%({'正值,Longs pay' if data['fr']>0 else '負值,Shorts pay'})
 - L/S: {data.get('ls') or 'N/A'}
 - OI: {data['oi']:.2f}萬
 
-MACD（15min）: DIF={macd_15['dif']:.2f}, DEA={macd_15['dea']:.2f}, MACD={macd_15['macd']:.2f}
-MACD（4h）: DIF={macd_4h['dif']:.2f}, DEA={macd_4h['dea']:.2f}, MACD={macd_4h['macd']:.2f}
-MACD（1D）: DIF={macd_1d['dif']:.2f}, DEA={macd_1d['dea']:.2f}, MACD={macd_1d['macd']:.2f}
+MACD(15min): DIF={macd_15['dif']:.2f}, DEA={macd_15['dea']:.2f}, MACD={macd_15['macd']:.2f}
+MACD(4h): DIF={macd_4h['dif']:.2f}, DEA={macd_4h['dea']:.2f}, MACD={macd_4h['macd']:.2f}
+MACD(1D): DIF={macd_1d['dif']:.2f}, DEA={macd_1d['dea']:.2f}, MACD={macd_1d['macd']:.2f}
 
-UFT計算結果：
+UFT計算結果:
 - σ(7天): ${uft_result['sigma']:,.0f}
 - GEX Pin: ${uft_result['gex']['pin']:,}
 - PCR(3JUL26): {uft_result['gex']['pcr']:.3f}
-- BehaviorSignal矛盾: {'是（權重×0.5）' if uft_result['behavior_contradiction'] else '否（全權重）'}
+- BehaviorSignal矛盾: {'是(權重×0.5)' if uft_result['behavior_contradiction'] else '否(全權重)'}
 - UFT Median: ${uft_result['uft_median']:,.0f}
 
-請執行4層對抗性碰撞並輸出JSON。
+請執行4層對抗性碰撞並輸出JSON.
 """
 
     headers = {
@@ -723,7 +723,7 @@ def generate_html(data, uft_result, collision, snapshot_num):
     elif fr < -0.005: rules_triggered.append("R#5 FR bearish (<-0.005%)")
     if (sk0 or 0) > 5: rules_triggered.append(f"R#Skew Strong bearish skew +{sk0:.1f}%")
     elif (sk0 or 0) < -5: rules_triggered.append(f"R#Skew Strong bullish skew {sk0:.1f}%")
-    # R#2補充：1D MACD DIF位置
+    # R#2補充:1D MACD DIF位置
     dif_1d = float((data.get("macd_1d") or data.get("macd",{}).get("1d",{})).get("dif",0))
     dea_1d = float((data.get("macd_1d") or data.get("macd",{}).get("1d",{})).get("dea",0))
     if dif_1d < 0 and dea_1d < 0 and dif_1d > dea_1d:
@@ -934,7 +934,7 @@ td:first-child{text-align:center;font-weight:bold;color:var(--cyan)}
       <div style="font-size:10px;line-height:1.7">""" + insight_txt + """</div>/usr/bin/env python3
 """
 GEX Oracle 自動化引擎 v2.0
-每6h自動執行：數據抓取 → UFT計算 → Claude碰撞 → HTML生成 → Telegram推送
+每6h自動執行:數據抓取 → UFT計算 → Claude碰撞 → HTML生成 → Telegram推送
 """
 
 import os, json, math, time, requests, sqlite3
@@ -963,7 +963,7 @@ def fetch_binance_fr():
     return float(d.get("lastFundingRate") or d.get("interestRate") or 0)
 
 def fetch_binance_oi():
-    """持倉量（萬張）"""
+    """持倉量(萬張)"""
     r = requests.get(
         "https://fapi.binance.com/fapi/v1/openInterest",
         params={"symbol": "BTCUSDT"}, timeout=10
@@ -988,7 +988,7 @@ def fetch_binance_ls():
         return float(r.json()[0]["longShortRatio"])
 
 def fetch_binance_klines(interval="4h", limit=100):
-    """K線數據（用於計算EMA/MACD）"""
+    """K線數據(用於計算EMA/MACD)"""
     r = requests.get(
         "https://fapi.binance.com/fapi/v1/klines",
         params={"symbol": "BTCUSDT", "interval": interval, "limit": limit},
@@ -1037,7 +1037,7 @@ def calc_macd(prices):
     return dif[-1], dea[-1], macd[-1]
 
 def fetch_deribit_dvol():
-    """DVOL（BTC期權隱含波動率指數）"""
+    """DVOL(BTC期權隱含波動率指數)"""
     r = requests.get(
         "https://www.deribit.com/api/v2/public/get_index",
         params={"currency": "BTC"}, timeout=10
@@ -1060,7 +1060,7 @@ def fetch_deribit_options(expiry_label):
     expiry_label: 例如 "3JUL26", "31JUL26", "25SEP26"
     返回: {strike: {call_oi, put_oi, call_iv, put_iv}}
     """
-    # Deribit到期日格式轉換（3JUL26 → 26JUL3 → 3JUL26格式）
+    # Deribit到期日格式轉換(3JUL26 → 26JUL3 → 3JUL26格式)
     r = requests.get(
         "https://www.deribit.com/api/v2/public/get_book_summary_by_currency",
         params={"currency": "BTC", "kind": "option"},
@@ -1131,7 +1131,7 @@ def collect_all_data():
     data["dvol"] = fetch_deribit_dvol()
     print(f"  DVOL: {data['dvol']:.2f}%")
 
-    # 期權鏈（三個到期日）
+    # 期權鏈(三個到期日)
     for expiry in ["3JUL26", "31JUL26", "25SEP26"]:
         try:
             opts = fetch_deribit_options(expiry)
@@ -1150,16 +1150,16 @@ def collect_all_data():
 # ============================================================
 
 def calc_gex_structure(options, spot):
-    """計算GEX Structure：Pin水位、PCR、Gamma Flip"""
+    """計算GEX Structure:Pin水位,PCR,Gamma Flip"""
     if not options:
         return {"pin": spot, "pcr": 1.0, "gamma_flip": spot - 2000}
 
-    # PCR（OI加權）
+    # PCR(OI加權)
     total_call_oi = sum(v["call_oi"] for v in options.values())
     total_put_oi = sum(v["put_oi"] for v in options.values())
     pcr = total_put_oi / total_call_oi if total_call_oi > 0 else 1.0
 
-    # ATM Put Wall（最大Put OI在Spot附近）
+    # ATM Put Wall(最大Put OI在Spot附近)
     atm_range = {k: v for k, v in options.items() if abs(k - spot) < 5000}
     if atm_range:
         max_put_strike = max(atm_range, key=lambda k: atm_range[k]["put_oi"])
@@ -1205,7 +1205,7 @@ def calc_uft(data, prev_data=None):
     gex = calc_gex_structure(opts_3jul, spot)
     gex_center = gex["pin"]
 
-    # BehaviorSignal成分（L/S已移除，用FR+PCR+Skew）
+    # BehaviorSignal成分(L/S已移除,用FR+PCR+Skew)
     expiries = data.get("expiries", ["3JUL26","31JUL26","25SEP26"])
     fr = data.get("fr", 0)
     oi_change = (data.get("oi",0) - prev_data.get("oi",0)) if prev_data else 0
@@ -1213,9 +1213,9 @@ def calc_uft(data, prev_data=None):
     # FR信號方向
     fr_signal = 1 if fr > 0 else -1
     fr_strength = min(abs(fr) / 0.0001, 1.0)
-    # Skew信號（正skew=偏空，負skew=偏多）
+    # Skew信號(正skew=偏空,負skew=偏多)
     skew_signal = -1 if skew_main > 2 else (1 if skew_main < -2 else 0)
-    # PCR ATM信號（更精確：用ATM PCR而非全局PCR）
+    # PCR ATM信號(更精確:用ATM PCR而非全局PCR)
     exp_main = expiries[0] if expiries else "3JUL26"
     pcr_atm = data.get(f"pcr_atm_{exp_main}", 0)
     pcr_otm = data.get(f"pcr_otm_{exp_main}", 0)
@@ -1223,24 +1223,24 @@ def calc_uft(data, prev_data=None):
     pcr_use = pcr_atm if pcr_atm > 0 else (pcr_ratio := sum(float(v.get("put_oi",0)) for v in data.get("options",{}).get(exp_main,{}).values()) / max(sum(float(v.get("call_oi",0)) for v in data.get("options",{}).get(exp_main,{}).values()), 1))
     pcr_signal = -1 if pcr_use > 1.3 else (1 if pcr_use < 0.6 else 0)
 
-    # OI變化方向（新增信號）
+    # OI變化方向(新增信號)
     oi_change = float(data.get("oi_change", 0) or 0)
     oi_signal = 0
     if abs(oi_change) > 0.1:  # 顯著變化
-        oi_signal = -1 if oi_change > 0 else 1  # OI增加+FR正=空頭主導（已處理FR方向）
+        oi_signal = -1 if oi_change > 0 else 1  # OI增加+FR正=空頭主導(已處理FR方向)
 
-    # Perp Basis（新增信號）
+    # Perp Basis(新增信號)
     basis_pct = float(data.get("perp_basis_pct", 0) or 0)
     basis_signal = 1 if basis_pct > 0.05 else (-1 if basis_pct < -0.05 else 0)
 
-    # WhaleTracker信號（從SQLite讀取近24h大額移動）
+    # WhaleTracker信號(從SQLite讀取近24h大額移動)
     whale_signal = 0
     try:
         import os as _osw, sqlite3 as _sq
         db_path = "data/whale_tracker.db"
         if _osw.path.exists(db_path):
             _conn = _sq.connect(db_path)
-            # 近24h的大額BTC淨流向（正=流入交易所=偏空，負=流出=偏多）
+            # 近24h的大額BTC淨流向(正=流入交易所=偏空,負=流出=偏多)
             _cur = _conn.execute("""
                 SELECT SUM(CASE WHEN direction='in' THEN amount ELSE -amount END)
                 FROM transfers
@@ -1254,14 +1254,14 @@ def calc_uft(data, prev_data=None):
                 whale_signal = -1 if _net > 500 else (1 if _net < -500 else 0)
     except: pass
 
-    # 合成行為信號（FR+Skew+PCR+OI+Basis+Whale）
+    # 合成行為信號(FR+Skew+PCR+OI+Basis+Whale)
     raw_signal = (fr_signal * fr_strength * 0.35
                 + skew_signal * 0.25
                 + pcr_signal * 0.20
                 + oi_signal * 0.10
                 + basis_signal * 0.05
                 + whale_signal * 0.05)
-    # 矛盾檢測：FR多但Skew強烈偏空
+    # 矛盾檢測:FR多但Skew強烈偏空
     contradiction = (fr_signal > 0 and skew_main > 5) or (fr_signal < 0 and skew_main < -5)
     weight = 0.5 if contradiction else 1.0
     behavior_raw = raw_signal * weight
@@ -1280,7 +1280,7 @@ def calc_uft(data, prev_data=None):
         gbm_bias -= 0.03
     gbm_center = spot + gbm_bias * sigma
 
-    # 貝葉斯成分（簡化）
+    # 貝葉斯成分(簡化)
     macd_1d = data["macd_1d"]["macd"]
     if macd_1d > 0:
         bayes_center = spot * 1.005  # 偏多
@@ -1328,20 +1328,20 @@ def calc_uft(data, prev_data=None):
 # 3. Claude API碰撞層
 # ============================================================
 
-UFT_SYSTEM_PROMPT = """你是GEX Oracle分析引擎，使用統一場論(UFT) v2.0對抗性碰撞框架分析BTC期權市場。
+UFT_SYSTEM_PROMPT = """你是GEX Oracle分析引擎,使用統一場論(UFT) v2.0對抗性碰撞框架分析BTC期權市場.
 
-核心規則：
-R#1 Put Wall三態：OTM(Gamma≈0)/ATM(最不穩定)/ITM(動態支撐)
-R#2 MACD壽命：15min≥6.5h/4h≥104h/1D≥26天。負值域Bullish X=0.5x
+核心規則:
+R#1 Put Wall三態:OTM(Gamma≈0)/ATM(最不穩定)/ITM(動態支撐)
+R#2 MACD壽命:15min≥6.5h/4h≥104h/1D≥26天.負值域Bullish X=0.5x
 R#5 FR穿越0%=最重要觸發信號
 R#10 POS Regime(Spot>GF)=穩定器/NEG(Spot<GF)=放大器
 R#14 主到期日結算後概率重置
-R#15 FR正+L/S同降=Contradictory Signal，BehaviorSignal x0.5
+R#15 FR正+L/S同降=Contradictory Signal,BehaviorSignal x0.5
 R#16 ≥3個到期日同一行權價最大Put OI=強力磁吸Pin
 
-UFT方程：P(X) = 0.40×GBM + 0.10×GEX + 0.28×BehaviorSignal + 0.12×Bayesian + 0.10×TimeDecay
+UFT方程:P(X) = 0.40×GBM + 0.10×GEX + 0.28×BehaviorSignal + 0.12×Bayesian + 0.10×TimeDecay
 
-輸出格式：JSON，包含以下欄位：
+輸出格式:JSON,包含以下欄位:
 {
   "layer1_bull": ["論點1", "論點2"],
   "layer1_bear": ["論點1", "論點2"],
@@ -1359,13 +1359,13 @@ UFT方程：P(X) = 0.40×GBM + 0.10×GEX + 0.28×BehaviorSignal + 0.12×Bayesian
   "key_insight": "本快照最重要的一句話洞察",
   "next_trigger": "最需要監控的下一個觸發條件"
 }
-只輸出JSON，不要其他文字。"""
+只輸出JSON,不要其他文字."""
 
 def call_claude_collision(data, uft_result):
     """呼叫Claude API進行對抗性碰撞"""
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
     if not api_key:
-        print("⚠️  未設置ANTHROPIC_API_KEY，跳過Claude碰撞")
+        print("⚠️  未設置ANTHROPIC_API_KEY,跳過Claude碰撞")
         return None
 
     # 構建輸入摘要
@@ -1374,27 +1374,27 @@ def call_claude_collision(data, uft_result):
     macd_1d = data["macd_1d"]
 
     user_prompt = f"""
-當前快照數據（UTC: {data['timestamp']}）：
+當前快照數據(UTC: {data['timestamp']}):
 
-基本數據：
+基本數據:
 - Spot: ${data['spot']:,.0f}
 - DVOL: {data['dvol']:.2f}%
-- FR: {data['fr']*100:+.5f}%（{'正值，Longs pay' if data['fr']>0 else '負值，Shorts pay'}）
+- FR: {data['fr']*100:+.5f}%({'正值,Longs pay' if data['fr']>0 else '負值,Shorts pay'})
 - L/S: {data.get('ls') or 'N/A'}
 - OI: {data['oi']:.2f}萬
 
-MACD（15min）: DIF={macd_15['dif']:.2f}, DEA={macd_15['dea']:.2f}, MACD={macd_15['macd']:.2f}
-MACD（4h）: DIF={macd_4h['dif']:.2f}, DEA={macd_4h['dea']:.2f}, MACD={macd_4h['macd']:.2f}
-MACD（1D）: DIF={macd_1d['dif']:.2f}, DEA={macd_1d['dea']:.2f}, MACD={macd_1d['macd']:.2f}
+MACD(15min): DIF={macd_15['dif']:.2f}, DEA={macd_15['dea']:.2f}, MACD={macd_15['macd']:.2f}
+MACD(4h): DIF={macd_4h['dif']:.2f}, DEA={macd_4h['dea']:.2f}, MACD={macd_4h['macd']:.2f}
+MACD(1D): DIF={macd_1d['dif']:.2f}, DEA={macd_1d['dea']:.2f}, MACD={macd_1d['macd']:.2f}
 
-UFT計算結果：
+UFT計算結果:
 - σ(7天): ${uft_result['sigma']:,.0f}
 - GEX Pin: ${uft_result['gex']['pin']:,}
 - PCR(3JUL26): {uft_result['gex']['pcr']:.3f}
-- BehaviorSignal矛盾: {'是（權重×0.5）' if uft_result['behavior_contradiction'] else '否（全權重）'}
+- BehaviorSignal矛盾: {'是(權重×0.5)' if uft_result['behavior_contradiction'] else '否(全權重)'}
 - UFT Median: ${uft_result['uft_median']:,.0f}
 
-請執行4層對抗性碰撞並輸出JSON。
+請執行4層對抗性碰撞並輸出JSON.
 """
 
     headers = {
@@ -1655,7 +1655,7 @@ def generate_html(data, uft_result, collision, snapshot_num):
     elif fr < -0.005: rules_triggered.append("R#5 FR bearish (<-0.005%)")
     if (sk0 or 0) > 5: rules_triggered.append(f"R#Skew Strong bearish skew +{sk0:.1f}%")
     elif (sk0 or 0) < -5: rules_triggered.append(f"R#Skew Strong bullish skew {sk0:.1f}%")
-    # R#2補充：1D MACD DIF位置
+    # R#2補充:1D MACD DIF位置
     dif_1d = float((data.get("macd_1d") or data.get("macd",{}).get("1d",{})).get("dif",0))
     dea_1d = float((data.get("macd_1d") or data.get("macd",{}).get("1d",{})).get("dea",0))
     if dif_1d < 0 and dea_1d < 0 and dif_1d > dea_1d:
@@ -1937,12 +1937,12 @@ _{datetime.now().strftime('%Y-%m-%d %H:%M')} UTC+8_"""
 # ============================================================
 
 def load_prev_data(db_path="data/gex_oracle.db"):
-    """載入上次快照 - 優先從GitHub API讀取counter（Actions環境無持久化）"""
+    """載入上次快照 - 優先從GitHub API讀取counter(Actions環境無持久化)"""
     os.makedirs("data", exist_ok=True)
     prev_num = 22
     prev_data = None
 
-    # 先嘗試從GitHub API讀取（Actions環境每次是全新，本地檔案不存在）
+    # 先嘗試從GitHub API讀取(Actions環境每次是全新,本地檔案不存在)
     gh_token = os.environ.get("GH_TOKEN", "")
     gh_repo = os.environ.get("GH_REPO", "Z3X1/SideProject_WhaleTracker")
     if gh_token:
@@ -2025,7 +2025,7 @@ def main():
     snapshot_num = prev_num + 1
     print(f"Snapshot: S{snapshot_num}")
 
-    # 1. 優先讀取已抓取的市場數據（由gex_oracle_fetch.py生成）
+    # 1. 優先讀取已抓取的市場數據(由gex_oracle_fetch.py生成)
     market_data_path = "data/oracle_market_data.json"
     if os.path.exists(market_data_path):
         print(f"📂 Loading pre-fetched data: {market_data_path}")
@@ -2035,7 +2035,7 @@ def main():
         print(f"  FR: {data.get('fr', 0)*100:+.5f}%")
         print(f"  L/S: {data.get('ls') or 'N/A'}")
         print(f"  DVOL: {data.get('dvol', 46):.2f}%")
-        # 格式標準化：將 data["macd"]["4h"] 轉為 data["macd_4h"]
+        # 格式標準化:將 data["macd"]["4h"] 轉為 data["macd_4h"]
         if "macd" in data and isinstance(data["macd"], dict):
             for tf_key, tf_new in [("15m","15m"), ("4h","4h"), ("1d","1d")]:
                 if tf_key in data["macd"]:
@@ -2067,7 +2067,7 @@ def main():
     # 5. Telegram推送
     send_telegram(data, uft_result, collision, snapshot_num)
 
-    # 6. 記錄預測到settlement_log（UFT動態優化）
+    # 6. 記錄預測到settlement_log(UFT動態優化)
     try:
         import sys
         sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -2094,7 +2094,7 @@ def main():
         )
         # 檢查是否有到期日需要記錄結算價
         check_and_record_settlement()
-        # 若有足夠樣本，自動優化權重
+        # 若有足夠樣本,自動優化權重
         new_weights = optimize_weights(min_samples=10)
         if new_weights:
             data["uft_weights"] = new_weights
