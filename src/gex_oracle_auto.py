@@ -245,7 +245,7 @@ def calc_gex_structure(options, spot):
 def calc_behavior_signal(fr, ls, oi_change, prev_ls=None):
     """
     行為信號計算
-    Rule#15: FR正+L/S同升=全權重；矛盾=×0.5
+    Rule#15: FR正+L/S同升=全權重;矛盾=×0.5
     """
     fr_direction = 1 if fr > 0 else -1
     ls_direction = 1 if (prev_ls is None or ls > prev_ls) else -1
@@ -1177,7 +1177,7 @@ def calc_gex_structure(options, spot):
 def calc_behavior_signal(fr, ls, oi_change, prev_ls=None):
     """
     行為信號計算
-    Rule#15: FR正+L/S同升=全權重；矛盾=×0.5
+    Rule#15: FR正+L/S同升=全權重;矛盾=×0.5
     """
     fr_direction = 1 if fr > 0 else -1
     ls_direction = 1 if (prev_ls is None or ls > prev_ls) else -1
