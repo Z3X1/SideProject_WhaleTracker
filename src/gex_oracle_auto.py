@@ -898,6 +898,8 @@ def main():
 
     # 2. UFT計算
     uft_result = calc_uft(data, prev_data)
+    print(f"UFT weights used: gbm={uft_result['uft_weights'].get('gbm',0):.2f} gex={uft_result['uft_weights'].get('gex',0):.2f} behavior={uft_result['uft_weights'].get('behavior',0):.2f}")
+
     print(f"UFT Median: ${uft_result['uft_median']:,.0f}")
 
     # 3. Claude碰撞
