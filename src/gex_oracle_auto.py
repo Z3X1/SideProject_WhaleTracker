@@ -1,9 +1,9 @@
-import json
 #!/usr/bin/env python3
-"""
-GEX Oracle 自動化引擎 v2.0
-每6h自動執行:數據抓取 → UFT計算 → Claude碰撞 → HTML生成 → Telegram推送
-"""
+import json
+# GEX Oracle Auto Engine v2.0
+
+
+
 
 import os, json, math, time, requests, sqlite3
 from datetime import datetime, timezone
