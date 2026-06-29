@@ -676,6 +676,19 @@ def generate_html(data, uft_result, collision, snapshot_num):
           'th{color:var(--mut);text-align:right;padding:3px 5px;font-size:9px;border-bottom:1px solid var(--border)}th:first-child{text-align:center}'
           'td{padding:3px 5px;text-align:right;border-bottom:1px solid rgba(30,41,59,.5)}td:first-child{text-align:center;font-weight:bold;color:var(--cyan)}'
           '.foot{text-align:center;padding:8px;color:var(--mut);font-size:9px}</style></head><body>')
+    # Tab導航欄放在 body 最開頭
+    _tab_js2=('function showTab(n){["main","glossary","learning"].forEach(function(t){var e=document.getElementById(t);var b=document.getElementById("tab-"+t);if(e)e.style.display=(t===n?"block":"none");if(b){b.style.background=(t===n?"var(--acc)":"var(--panel)");b.style.color=(t===n?"#fff":"var(--mut)");}});}')
+    _ta2='background:var(--acc);color:#fff;border:none'
+    _ti2='background:var(--panel);color:var(--mut);border:1px solid var(--border);border-bottom:none'
+    _tb2='padding:6px 12px;border-radius:4px 4px 0 0;font-size:10px;cursor:pointer;font-family:inherit'
+    css+=(
+        f'<div style="display:flex;gap:4px;padding:8px 10px 0;background:var(--bg);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100">'
+        f'<button onclick="showTab(\'main\')" id="tab-main" style="{_ta2};{_tb2}">主要分析</button>'
+        f'<button onclick="showTab(\'glossary\')" id="tab-glossary" style="{_ti2};{_tb2}">📖 名詞解釋</button>'
+        f'<button onclick="showTab(\'learning\')" id="tab-learning" style="{_ti2};{_tb2}">🧠 學習狀態</button>'
+        f'</div><script>{_tab_js2}</script>'
+        f'<div id="main">'
+    )
     css+=f'<div class="hdr"><div><div class="ht">GEX ORACLE AUTO S{snapshot_num}</div>'
     css+=f'<div class="hs">UFT v2.0 | {ts} UTC | 6h | <span style="color:{agc}">updated {ags}</span></div>'
     css+=f'<div class="hs">FR next: <span style="color:var(--cyan)">{fns}</span> | Acc: <span style="color:{frc}">{facc:+.5f}%</span> | Pin Risk: <span style="color:{prc};font-weight:bold">{pr}</span></div>'
@@ -791,29 +804,7 @@ def generate_html(data, uft_result, collision, snapshot_num):
             f'<div style="font-size:10px;color:var(--cyan)">{_nt if _nt else "Monitor FR/Skew/Spot vs Pin"}</div>'
             f'</div></div></div></div>'
         )
-    css+=coh+slh+clh
-    # Tab系統
-    tab_js = (
-        'function showTab(n){'
-        '["main","glossary","learning"].forEach(function(t){'
-        'var e=document.getElementById(t);'
-        'var b=document.getElementById("tab-"+t);'
-        'if(e)e.style.display=(t===n?"block":"none");'
-        'if(b){b.style.background=(t===n?"var(--acc)":"var(--panel)");'
-        'b.style.color=(t===n?"#fff":"var(--mut)");}});}'
-    )
-    tab_active = 'background:var(--acc);color:#fff;border:none'
-    tab_inactive = 'background:var(--panel);color:var(--mut);border:1px solid var(--border);border-bottom:none'
-    tab_btn_base = 'padding:6px 12px;border-radius:4px 4px 0 0;font-size:10px;cursor:pointer;font-family:inherit'
-    css += (
-        f'<div style="display:flex;gap:4px;padding:8px 10px 0;background:var(--bg);'
-        f'border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100">'
-        f'<button onclick="showTab(\'main\')" id="tab-main" style="{tab_active};{tab_btn_base}">主要分析</button>'
-        f'<button onclick="showTab(\'glossary\')" id="tab-glossary" style="{tab_inactive};{tab_btn_base}">📖 名詞解釋</button>'
-        f'<button onclick="showTab(\'learning\')" id="tab-learning" style="{tab_inactive};{tab_btn_base}">🧠 學習狀態</button>'
-        f'</div><script>{tab_js}</script>'
-        f'<div id="main">'
-    )
+    # coh+slh+clh+footer 在 #main div 內
     css += coh + slh + clh
     css += f'<div class="foot">GEX Oracle v2.0 | S{snapshot_num} | 6h auto | Not investment advice</div>'
     css += '</div>'  # close #main
