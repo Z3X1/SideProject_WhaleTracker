@@ -974,20 +974,86 @@ if __name__ == "__main__":
         data = json.load(f)
     print(f"Spot: ${data.get('spot',0):,.2f}  FR: {data.get('fr',0)*100:+.5f}%")
 
-    # 2. 讀/更新 snapshot counter
+    # 2. 讀/更新 snapshot counter + 硬性觸發判斷
     counter_path = "data/snapshot_counter.json"
     if os.path.exists(counter_path):
         with open(counter_path) as f:
             counter = json.load(f)
     else:
-        counter = {"last_snapshot": 22, "count": 22}
-    # 相容兩種格式：優先用 last_snapshot，fallback 用 count
+        counter = {"last_snapshot": 27, "count": 27, "last_spot": 0,
+                   "last_fr": 0, "last_ls": 0, "last_oi": 0}
+
     prev_num = max(counter.get("last_snapshot", 0), counter.get("count", 0))
-    snapshot_num = prev_num + 1
-    counter["last_snapshot"] = snapshot_num
-    counter["count"] = snapshot_num
+
+    # ── 硬性觸發條件（任一滿足 → S++）────────────────────────────
+    spot      = data.get("spot", 0)
+    fr        = data.get("fr", 0) * 100          # 轉換為百分比
+    ls        = data.get("ls") or 0
+    oi        = data.get("oi", 0)
+    sigma     = spot * (data.get("dvol", 50) / 100) * math.sqrt(
+                    parse_days_to_expiry(data.get("expiries", ["7D"])[0]) / 365)
+
+    last_spot = counter.get("last_spot", spot)
+    last_fr   = counter.get("last_fr", fr)
+    last_ls   = counter.get("last_ls", ls)
+    last_oi   = counter.get("last_oi", oi)
+
+    hard_triggers = []
+
+    # FR 穿越：-0.01 / -0.005 / 0 / +0.005 / +0.01（符號改變或越過閾值）
+    fr_thresholds = [-0.01, -0.005, 0.0, 0.005, 0.01]
+    for thr in fr_thresholds:
+        if (last_fr < thr <= fr) or (last_fr > thr >= fr):
+            hard_triggers.append(f"FR穿越{thr:+.3f}%（{last_fr:+.5f}→{fr:+.5f}）")
+
+    # Spot 移動 > ±0.5σ
+    if sigma > 0 and abs(spot - last_spot) > 0.5 * sigma:
+        hard_triggers.append(f"Spot移動{spot-last_spot:+,.0f}（>{0.5*sigma:,.0f}=0.5σ）")
+
+    # L/S 整數穿越：1.5 / 2.0 / 2.5 / 3.0
+    if ls > 0 and last_ls > 0:
+        for thr in [1.5, 2.0, 2.5, 3.0]:
+            if (last_ls < thr <= ls) or (last_ls > thr >= ls):
+                hard_triggers.append(f"L/S穿越{thr}（{last_ls:.3f}→{ls:.3f}）")
+
+    # OI 跳動 > ±300張（配合 FR 方向）
+    oi_change = abs(oi - last_oi) * 10000  # 萬→張
+    if oi_change > 300:
+        hard_triggers.append(f"OI跳動{oi_change:+,.0f}張（{last_oi:.2f}→{oi:.2f}萬）")
+
+    # 時間強制：T = 24h / 6h / 2h（由 generate_html T-checklist 已處理，這裡用 T<=1d 強制觸發）
+    dl = parse_days_to_expiry(data.get("expiries", ["7D"])[0])
+    if dl in [1, 0]:
+        hard_triggers.append(f"T={dl}d強制觸發（結算前最後窗口）")
+
+    # 優化觸發（optimizer 本次跑完後若有新權重，也算觸發）
+    # → 在 step 6 optimizer 跑完後補充判斷，這裡先留 flag
+    _optimizer_triggered = False
+
+    is_hard_trigger = len(hard_triggers) > 0
+
+    if is_hard_trigger:
+        snapshot_num = prev_num + 1
+        trigger_str = " | ".join(hard_triggers)
+        print(f"[HARD TRIGGER] {trigger_str}")
+        print(f"Snapshot: S{snapshot_num} (+1 觸發)")
+    else:
+        snapshot_num = prev_num  # 保持不變，本次只更新 dashboard 不記錄新快照
+        print(f"[NO TRIGGER] 本次無硬性觸發，snapshot 維持 S{snapshot_num}")
+
+    # 更新 counter（無論是否觸發都更新最新市場數據）
+    counter.update({
+        "last_snapshot": snapshot_num,
+        "count": snapshot_num,
+        "last_spot": spot,
+        "last_fr": fr,
+        "last_ls": ls,
+        "last_oi": oi,
+        "hard_triggers": hard_triggers,
+        "last_trigger_ts": data.get("timestamp", ""),
+    })
     with open(counter_path, "w") as f:
-        json.dump(counter, f)
+        json.dump(counter, f, indent=2)
     print(f"Snapshot: S{snapshot_num}")
 
     # 3. 讀上一筆數據（用於行為信號計算）
@@ -1035,8 +1101,20 @@ if __name__ == "__main__":
         print(f"Recorded S{snapshot_num} → {main_expiry} ${uft_result['uft_median']:,.0f}")
         # 自動結算檢查
         check_and_record_settlement()
-        # 10筆以上嘗試優化
+        # 10筆以上嘗試優化；若有新權重產生 → 觸發 S++
+        _old_w_str = str(json.load(open("data/settlement_log.json")).get("current_weights", {})) if os.path.exists("data/settlement_log.json") else ""
         optimize_weights(min_samples=10)
+        _new_w_str = str(json.load(open("data/settlement_log.json")).get("current_weights", {})) if os.path.exists("data/settlement_log.json") else ""
+        if _old_w_str and _new_w_str and _old_w_str != _new_w_str:
+            # 優化觸發：權重有變化 → S++
+            _optimizer_triggered = True
+            if not is_hard_trigger:
+                snapshot_num += 1
+                counter["last_snapshot"] = snapshot_num
+                counter["count"] = snapshot_num
+                with open(counter_path, "w") as f:
+                    json.dump(counter, f, indent=2)
+                print(f"[OPTIMIZER TRIGGER] 權重更新 → S{snapshot_num}")
     except Exception as _e:
         print(f"record_prediction error: {_e}")
 
