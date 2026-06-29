@@ -349,7 +349,6 @@ def fetch_all():
         for strike in sorted_strikes:
             v = o[strike]
             c_iv = float(v.get("call_iv", 0))
-            p_iv = float(v.get("put_oi", 0))  # 先用OI定位
             call_oi = float(v.get("call_oi", 0))
             put_oi_v = float(v.get("put_oi", 0))
             c_iv_real = float(v.get("call_iv", 0))
@@ -400,9 +399,21 @@ def fetch_all():
             except:
                 return 0
 
-        # 計算到期時間（簡化：用到期日名稱估算）
-        expiry_days = {"3JUL26": 6, "31JUL26": 34, "25SEP26": 90}
-        T = expiry_days.get(expiry, 30) / 365
+        # 計算到期時間（動態：基於今日日期計算剩餘天數）
+        import re as _re_gf, math as _math_gf
+        from datetime import date as _date_gf
+        _mn_gf = {"JAN":1,"FEB":2,"MAR":3,"APR":4,"MAY":5,"JUN":6,
+                  "JUL":7,"AUG":8,"SEP":9,"OCT":10,"NOV":11,"DEC":12}
+        _dl_gf = 7
+        try:
+            _m_gf = _re_gf.match(r"(\d+)([A-Z]+)(\d+)", expiry.upper())
+            if _m_gf:
+                _dl_gf = max(1, (_date_gf(2000+int(_m_gf.group(3)),
+                             _mn_gf[_m_gf.group(2)], int(_m_gf.group(1)))
+                             - _date_gf.today()).days)
+        except Exception:
+            pass
+        T = _dl_gf / 365
         dvol = data.get("dvol", 50) / 100
 
         # 計算每個行權價的Net GEX

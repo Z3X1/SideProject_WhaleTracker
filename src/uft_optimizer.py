@@ -47,9 +47,9 @@ from datetime import datetime, timezone
 # }
 
 DEFAULT_WEIGHTS = {
-    "gbm": 0.40, "gex": 0.10,
-    "behavior": 0.28, "bayesian": 0.12, "timedecay": 0.10
-}
+    "gbm": 0.30, "gex": 0.18,
+    "behavior": 0.28, "bayesian": 0.12, "timedecay": 0.12
+}  # v2.0 weights — must sum to 1.00
 
 LOG_PATH = "data/settlement_log.json"
 
@@ -146,11 +146,22 @@ def optimize_weights(min_samples=10):
     keys = ["gbm", "gex", "behavior", "bayesian", "timedecay"]
 
     def calc_error(weights):
-        """計算給定權重下的總誤差"""
+        """
+        計算給定權重下的總誤差。
+        components 裡每項已是 w_orig * center_value（已乘過原始權重）。
+        還原 center_value = component / w_orig，再用新 weights 重建預測。
+        若原始 weight 為 0 則跳過該項（避免除以零）。
+        """
         total_sq_error = 0
+        orig_w = log["current_weights"]
         for r in completed:
             c = r["components"]
-            pred = sum(weights[i] * c.get(keys[i], 0) for i in range(5))
+            w_orig = r.get("weights_used", orig_w)
+            pred = 0.0
+            for i, k in enumerate(keys):
+                w_o = float(w_orig.get(k, orig_w.get(k, 0.01)))
+                raw_center = c.get(k, 0) / w_o if w_o != 0 else 0
+                pred += weights[i] * raw_center
             err = (pred - r["actual_settlement"]) ** 2
             total_sq_error += err
         return total_sq_error / len(completed)
@@ -162,12 +173,19 @@ def optimize_weights(min_samples=10):
 
     for iteration in range(500):
         grad = [0.0] * 5
+        orig_w = log["current_weights"]
         for r in completed:
             c = r["components"]
-            pred = sum(w[i] * c.get(keys[i], 0) for i in range(5))
+            w_orig = r.get("weights_used", orig_w)
+            # 還原 center values（與 calc_error 邏輯一致）
+            raw_centers = []
+            for k in keys:
+                w_o = float(w_orig.get(k, orig_w.get(k, 0.01)))
+                raw_centers.append(c.get(k, 0) / w_o if w_o != 0 else 0)
+            pred = sum(w[i] * raw_centers[i] for i in range(5))
             diff = 2 * (pred - r["actual_settlement"]) / len(completed)
             for i in range(5):
-                grad[i] += diff * c.get(keys[i], 0)
+                grad[i] += diff * raw_centers[i]
 
         # 更新
         w_new = [max(0.01, w[i] - lr * grad[i]) for i in range(5)]
@@ -181,10 +199,18 @@ def optimize_weights(min_samples=10):
             best_weights = w_new.copy()
             w = w_new
 
+    # 最終歸一（防止梯度下降浮點積累導致 sum != 1）
+    _bw_sum = sum(best_weights)
+    best_weights = [x / _bw_sum for x in best_weights]
     new_weights = {keys[i]: round(best_weights[i], 4) for i in range(5)}
+    # 確保 sum 精確為 1.0（用最大項補差）
+    _diff = 1.0 - sum(new_weights.values())
+    if abs(_diff) > 0:
+        _max_k = max(new_weights, key=new_weights.get)
+        new_weights[_max_k] = round(new_weights[_max_k] + _diff, 4)
     print(f"\n優化結果:")
     print(f"  舊權重: {log['current_weights']}")
-    print(f"  新權重: {new_weights}")
+    print(f"  新權重: {new_weights}  (sum={sum(new_weights.values()):.4f})")
     print(f"  誤差改善: {calc_error([log['current_weights'][k] for k in keys]):.0f} -> {best_error:.0f}")
 
     # 保存

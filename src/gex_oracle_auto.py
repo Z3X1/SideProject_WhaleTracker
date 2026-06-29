@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import json
 # GEX Oracle Auto Engine v2.0
 
 
@@ -11,6 +10,24 @@ from datetime import datetime, timezone
 # ============================================================
 # 1. 數據抓取層
 # ============================================================
+
+
+# ── Helper: 解析到期日字串 → 剩餘天數（單一真實來源）────────────────
+import re as _re_exp
+_MONTHS_EXP = {"JAN":1,"FEB":2,"MAR":3,"APR":4,"MAY":5,"JUN":6,
+               "JUL":7,"AUG":8,"SEP":9,"OCT":10,"NOV":11,"DEC":12}
+
+def parse_days_to_expiry(expiry_str):
+    """'3JUL26' → 剩餘天數(int)，最小1天"""
+    from datetime import date as _date_exp
+    try:
+        m = _re_exp.match(r"(\d+)([A-Z]+)(\d+)", expiry_str.upper())
+        if m:
+            d = _date_exp(2000 + int(m.group(3)), _MONTHS_EXP[m.group(2)], int(m.group(1)))
+            return max(1, (d - _date_exp.today()).days)
+    except Exception:
+        pass
+    return 7  # fallback
 
 
 def fetch_binance_spot():
@@ -272,18 +289,9 @@ def calc_uft(data, prev_data=None):
 
     # BehaviorSignal成分(L/S已移除,用FR+PCR+Skew)
     expiries = data.get("expiries", ["3JUL26","31JUL26","25SEP26"])
-    # T_main動態：用expiries[0]計算實際剩餘天數
-    import re as _re2
-    from datetime import date as _date2
-    _mn2={"JAN":1,"FEB":2,"MAR":3,"APR":4,"MAY":5,"JUN":6,"JUL":7,"AUG":8,"SEP":9,"OCT":10,"NOV":11,"DEC":12}
-    _exp0=data.get("expiries",["3JUL26","31JUL26","25SEP26"])[0]
-
-    _dl=7
-    try:
-        _m3=_re2.match(r"(\d+)([A-Z]+)(\d+)",_exp0)
-        if _m3: _dl=max(1,(_date2(2000+int(_m3.group(3)),_mn2[_m3.group(2)],int(_m3.group(1)))-_date2.today()).days)
-    except: pass
-    T = _dl / 365  # 動態T覆蓋
+    _exp0 = data.get("expiries", ["3JUL26","31JUL26","25SEP26"])[0]
+    _dl = parse_days_to_expiry(_exp0)   # 單一真實來源
+    T = _dl / 365                       # 動態T覆蓋
     sigma = spot * dvol * math.sqrt(T)  # 重算sigma
     fr = data.get("fr", 0)
     oi_change = (data.get("oi",0) - prev_data.get("oi",0)) if prev_data else 0
@@ -333,34 +341,49 @@ def calc_uft(data, prev_data=None):
                 + basis_signal * 0.05 + whale_signal * 0.05)
     behavior_signal = max(-1, min(1, raw_signal))
     contradiction = bool(fr > 0.005 and skew_main > 5)
-    weight = 0.28 * (0.7 if contradiction else 1.0)
+    # behavior 懲罰因子（不縮減權重，縮減信號強度）
+    behavior_penalty = 0.7 if contradiction else 1.0
     import math as _m2
     exp_main = expiries[0] if expiries else "3JUL26"
-    T_main = _dl / 365  # 用同一個動態_dl
+    T_main = _dl / 365
     sigma_main = spot * (data.get("dvol", 50) / 100) * _m2.sqrt(T_main)
     gf_dict = data.get("gamma_flip", {})
     gamma_flip_main = int(gf_dict.get(exp_main, gex_center) or gex_center)
     regime = "POS" if spot > gamma_flip_main else "NEG"
-    # Bayesian偏移動態收斂：T越小越往GEX Pin收斂
-    _t_factor=max(0.0, min(1.0, _dl/30))  # T=0→0, T=30→1
-    _skew_factor=min(1.0, abs(skew_main)/10) if skew_main!=0 else 0.3
-    _regime_signal=1 if regime=="POS" else -1
-    _bayes_offset=_regime_signal*_skew_factor*_t_factor*0.4  # 最大±0.4σ
-    bayes_center=spot+_bayes_offset*sigma_main
-    bw = {"gbm":0.30,"gex":0.18,"behavior":weight,"bayesian":0.12,"timedecay":0.10}
-    bw.update(data.get("uft_weights", {}))
-    uft = (bw["gbm"]*spot + bw["gex"]*gex_center + weight*(spot+behavior_signal*sigma_main)
-           + bw["bayesian"]*bayes_center + bw["timedecay"]*gex_center)
+    # Bayesian 動態收斂：T 越小越往 GEX Pin 收斂
+    _t_factor = max(0.0, min(1.0, _dl / 30))
+    _skew_factor = min(1.0, abs(skew_main) / 10) if skew_main != 0 else 0.3
+    _regime_signal = 1 if regime == "POS" else -1
+    _bayes_offset = _regime_signal * _skew_factor * _t_factor * 0.4
+    bayes_center = spot + _bayes_offset * sigma_main
+    # ── 基礎權重（固定歸一，sum=1.00）────────────────────────────
+    bw = {"gbm": 0.30, "gex": 0.18, "behavior": 0.28, "bayesian": 0.12, "timedecay": 0.12}
+    # 允許 optimizer 覆蓋（optimizer 輸出應保證 sum=1）
+    _override = data.get("uft_weights", {})
+    if _override and abs(sum(_override.values()) - 1.0) < 0.02:
+        bw.update(_override)
+    # 重新歸一（防止浮點誤差）
+    _total = sum(bw.values())
+    bw = {k: v / _total for k, v in bw.items()}
+    # ── UFT 方程式（所有項結構統一：weight × center_estimate）────
+    # behavior 信號縮減在 center_estimate 內（signal * penalty），不縮減 weight
+    behavior_center = spot + behavior_signal * behavior_penalty * sigma_main
+    uft = (bw["gbm"] * spot
+           + bw["gex"] * gex_center
+           + bw["behavior"] * behavior_center
+           + bw["bayesian"] * bayes_center
+           + bw["timedecay"] * gex_center)
     return {
-        "uft_median": round(uft,2), "uft_mode": gex_center, "uft_emh": spot,
-        "sigma": round(sigma_main,2), "regime": regime, "gamma_flip": gamma_flip_main,
-        "behavior_contradiction": contradiction, "behavior_weight": weight,
+        "uft_median": round(uft, 2), "uft_mode": gex_center, "uft_emh": spot,
+        "sigma": round(sigma_main, 2), "regime": regime, "gamma_flip": gamma_flip_main,
+        "behavior_contradiction": contradiction, "behavior_penalty": behavior_penalty,
         "skew_main": skew_main, "uft_weights": bw,
         "components": {
-            "gbm": round(bw["gbm"]*spot,2), "gex": round(bw["gex"]*gex_center,2),
-            "behavior": round(weight*(spot+behavior_signal*sigma_main),2),
-            "bayesian": round(bw["bayesian"]*bayes_center,2),
-            "timedecay": round(bw["timedecay"]*gex_center,2),
+            "gbm":       round(bw["gbm"] * spot, 2),
+            "gex":       round(bw["gex"] * gex_center, 2),
+            "behavior":  round(bw["behavior"] * behavior_center, 2),
+            "bayesian":  round(bw["bayesian"] * bayes_center, 2),
+            "timedecay": round(bw["timedecay"] * gex_center, 2),
         }
     }
 
@@ -377,14 +400,7 @@ def generate_rule_based_collision(data, uft_result):
     gf=int(uft_result.get("gamma_flip",spot) or spot)
     expiries=data.get("expiries",["3JUL26"])
     exp0=expiries[0] if expiries else "3JUL26"
-    import re as _re
-    from datetime import date
-    mn={"JAN":1,"FEB":2,"MAR":3,"APR":4,"MAY":5,"JUN":6,"JUL":7,"AUG":8,"SEP":9,"OCT":10,"NOV":11,"DEC":12}
-    dl=999
-    try:
-        m2=_re.match(r"(\d+)([A-Z]+)(\d+)",exp0)
-        if m2: dl=(date(2000+int(m2.group(3)),mn[m2.group(2)],int(m2.group(1)))-date.today()).days
-    except: pass
+    dl = parse_days_to_expiry(exp0)
     opts=data.get("options",{}).get(exp0,{})
     tc=sum(float(v.get("call_oi",0)) for v in opts.values())
     tp=sum(float(v.get("put_oi",0)) for v in opts.values())
@@ -485,7 +501,7 @@ def generate_html(data, uft_result, collision, snapshot_num):
     comps=uft_result.get('components',{})
     regime=uft_result.get('regime','POS')
     gf_main=int(uft_result.get('gamma_flip',uft_mode) or uft_mode)
-    weights=data.get('uft_weights',{'gbm':0.40,'gex':0.10,'behavior':0.28,'bayesian':0.12,'timedecay':0.10})
+    weights=uft_result.get('uft_weights',{'gbm':0.30,'gex':0.18,'behavior':0.28,'bayesian':0.12,'timedecay':0.12})
     def ms(kf,kn):
         m=data.get(kf) or data.get('macd',{}).get(kn,{})
         dif=float(m.get('dif',0)); dea=float(m.get('dea',0)); mac=float(m.get('macd',0))
@@ -528,15 +544,8 @@ def generate_html(data, uft_result, collision, snapshot_num):
         pC=round((nc((uft_med-sigma*.5-spot)/sigma)-nc((uft_med-sigma-spot)/sigma))*100,1)
         pD=round(nc((uft_med-sigma-spot)/sigma)*100,1)
     else: pA,pB,pC,pD=20,50,20,10
-    mn={'JAN':1,'FEB':2,'MAR':3,'APR':4,'MAY':5,'JUN':6,'JUL':7,'AUG':8,'SEP':9,'OCT':10,'NOV':11,'DEC':12}
-    cd=''; dl=999
-    try:
-        import re as re2
-        m2=re2.match(r'(\d+)([A-Z]+)(\d+)',exp0)
-        if m2:
-            ed=date(2000+int(m2.group(3)),mn[m2.group(2)],int(m2.group(1)))
-            dl=(ed-date.today()).days; cd=f'T-{dl}d' if dl>0 else 'TODAY'
-    except: pass
+    dl = parse_days_to_expiry(exp0)
+    cd = f'T-{dl}d' if dl > 0 else 'TODAY'
     try:
         now=datetime.now(timezone.utc)
         nxt=min((h for h in [0,8,16] if h>now.hour),default=24)
@@ -784,7 +793,7 @@ def send_telegram(data, uft_result, collision, snapshot_num):
     chat_id=os.environ.get("TELEGRAM_CHAT_ID","")
     if not bot_token or not chat_id: print("[INFO] Telegram not configured"); return
     spot=float(data.get("spot",0)); fr_pct=float(data.get("fr",0))*100
-    uft_med=uft_result["uft_median"]; contradiction=uft_result["behavior_contradiction"]
+    uft_med=uft_result["uft_median"]; behavior_penalty=uft_result.get("behavior_penalty", 1.0); contradiction=uft_result["behavior_contradiction"]
     oracle=collision.get("oracle_verdict","N/A") if collision else "N/A"
     key_insight=collision.get("key_insight","") if collision else ""
     macd_1d=data.get("macd_1d") or data.get("macd",{}).get("1d",{})
@@ -803,7 +812,7 @@ def load_prev_data(db_path="data/gex_oracle.db"):
     prev_data=None; prev_num=22
     try:
         import urllib.request as _ur2
-        gh_token=os.environ.get("GH_PAT",os.environ.get("GITHUB_TOKEN",""))
+        gh_token=os.environ.get("GITHUB_TOKEN",os.environ.get("GH_PAT",""))
         gh_repo=os.environ.get("GITHUB_REPOSITORY","Z3X1/SideProject_WhaleTracker")
         url=f"https://api.github.com/repos/{gh_repo}/contents/data/snapshot_counter.json"
         req2=_ur2.Request(url,headers={"Authorization":f"token {gh_token}","Accept":"application/vnd.github.v3+json"})
@@ -846,7 +855,7 @@ def save_snapshot(data, uft_result, collision, snapshot_num, db_path="data/gex_o
     # 更新GitHub counter（跨runner持久化）
     try:
         import urllib.request as _urw, base64 as _b64w
-        gh_token=os.environ.get("GH_PAT",os.environ.get("GITHUB_TOKEN",""))
+        gh_token=os.environ.get("GITHUB_TOKEN",os.environ.get("GH_PAT",""))
         gh_repo=os.environ.get("GITHUB_REPOSITORY","Z3X1/SideProject_WhaleTracker")
         url=f"https://api.github.com/repos/{gh_repo}/contents/data/snapshot_counter.json"
         # 先GET取SHA

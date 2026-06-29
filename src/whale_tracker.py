@@ -383,14 +383,22 @@ class BehaviorAnalyzer:
             if ex not in by_ex:
                 by_ex[ex] = {"in": 0, "out": 0}
             by_ex[ex][d] += vol
+        # 語義定義（極致顆粒度）：
+        # inflow  = 鯨魚「收到」BTC（來自交易所 = 提幣 = 看漲）
+        # outflow = 鯨魚「發出」BTC（去往交易所 = 入金/拋售 = 看跌）
+        # net = outflow - inflow
+        # net > 0 → 鯨魚淨發出 → 去往交易所 → 拋壓 → BEARISH
+        # net < 0 → 鯨魚淨收到 → 來自交易所 → 提幣 → BULLISH
+        whale_net_direction = "bear" if net > 0 else ("bull" if net < 0 else "neutral")
         return {
-            "inflow":      round(inflow,  2),
-            "outflow":     round(outflow, 2),
-            "net":         round(net,     2),
+            "inflow":      round(inflow,  2),   # 鯨魚收到 BTC（提幣）
+            "outflow":     round(outflow, 2),   # 鯨魚發出 BTC（入金/拋售）
+            "net":         round(net,     2),   # outflow - inflow，正=拋壓
             "by_exchange": by_ex,
-            "signal":      "EXCHANGE_OUTFLOW" if net > 100 else
-                           "EXCHANGE_INFLOW"  if net < -100 else "NEUTRAL",
-            "direction":   "bull" if net > 0 else "bear",
+            "signal":      "EXCHANGE_INFLOW"   if net > 100  else   # 鯨魚發出→交易所收到
+                           "EXCHANGE_OUTFLOW"  if net < -100 else   # 交易所發出→鯨魚收到
+                           "NEUTRAL",
+            "direction":   whale_net_direction,
         }
 
     def detect_dormant_wake(self) -> list:
@@ -414,9 +422,19 @@ class BehaviorAnalyzer:
         } for address, _, _, bal in c.fetchall()]
 
     def compute_signal_score(self, ef: dict, se: list, dw: list) -> float:
-        score = (0.40 * max(-1.0, min(1.0, ef.get("net", 0) / 1000)) +
-                 0.30 * (0.2 * min(1.0, len(se) / 10)) +
-                 0.20 * (-0.3 * min(1.0, len(dw) / 5)))
+        """
+        合成信號分數 [-1, +1]。
+        三個子信號各自歸一化到 [-1, +1] 後加權求和，總權重 = 1.0。
+          - exchange_flow (0.55): net BTC 流出 > 0 → bull（提幣看漲）
+          - sync_move     (0.30): 多鯨同步移動 → 方向不明，取弱正（謹慎看漲）
+          - dormant_wake  (0.15): 休眠鯨魚甦醒 → 偏空（拋售風險）
+        """
+        ex_signal   = max(-1.0, min(1.0, ef.get("net", 0) / 1000))
+        sync_signal = min(1.0, len(se) / 10) * 0.5   # 同步移動方向不明，衰減 0.5
+        dorm_signal = -min(1.0, len(dw) / 5)          # 休眠甦醒 = 負信號
+        score = (0.55 * ex_signal +
+                 0.30 * sync_signal +
+                 0.15 * dorm_signal)
         return round(max(-1.0, min(1.0, score)), 3)
 
 # ── Main Hourly Batch ─────────────────────────────────────────────────────────

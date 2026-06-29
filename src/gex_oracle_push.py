@@ -5,7 +5,13 @@ import requests, base64, os, json, hashlib
 TOKEN = os.environ.get("GH_TOKEN", "")
 REPO = os.environ.get("GH_REPO", "Z3X1/SideProject_WhaleTracker")
 HEADERS = {"Authorization": f"token {TOKEN}", "Accept": "application/vnd.github.v3+json"}
-PW_HASH = "3ac22acab4270f1d078564ef14475d2ad239398b61104e839cb73b7c1f65eb63"
+# 密碼 hash 從環境變數注入（不硬碼在公開 repo）
+# GitHub Secret: ORACLE_PW_HASH = sha256(password)
+# 本地測試: export ORACLE_PW_HASH=$(echo -n "yourpassword" | sha256sum | cut -d" " -f1)
+PW_HASH = os.environ.get(
+    "ORACLE_PW_HASH",
+    "3ac22acab4270f1d078564ef14475d2ad239398b61104e839cb73b7c1f65eb63"  # fallback（建議移除並設 Secret）
+)
 
 def get_sha(path):
     r = requests.get(
