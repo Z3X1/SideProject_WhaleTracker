@@ -104,6 +104,42 @@
       },
       "error_sigma": null,
       "error_usd": null
+    },
+    {
+      "snapshot_num": 28,
+      "expiry": "3JUL26",
+      "timestamp": "2026-06-29T19:37:08.388656+00:00",
+      "predicted_median": 60512.05,
+      "predicted_mode": 60236.18,
+      "sigma": 3307.7,
+      "regime_at_prediction": "POS",
+      "actual_settlement": null,
+      "components": {
+        "gbm": 16866.13,
+        "gex": 12047.24,
+        "behavior": 17120.82,
+        "bayesian": 7249.51,
+        "timedecay": 7228.34
+      },
+      "weights_used": {
+        "gbm": 0.28,
+        "gex": 0.2,
+        "behavior": 0.28,
+        "bayesian": 0.12,
+        "timedecay": 0.12
+      },
+      "signals": {
+        "fr": 0.0001,
+        "skew": 14.24,
+        "dvol": 52.45471,
+        "pcr_main": 1.125,
+        "macd_4h": -332.87,
+        "regime_pos": 1.0,
+        "gamma_flip": 58099.0,
+        "contradiction": 0.0
+      },
+      "error_sigma": null,
+      "error_usd": null
     }
   ],
   "current_weights": {
@@ -114,5 +150,28 @@
     "timedecay": 0.1
   },
   "weight_history": [],
-  "last_optimized": null
+  "last_optimized": null,
+  "regime_weights": {
+    "POS": {
+      "gbm": 0.28,
+      "gex": 0.2,
+      "behavior": 0.28,
+      "bayesian": 0.12,
+      "timedecay": 0.12
+    },
+    "NEG": {
+      "gbm": 0.25,
+      "gex": 0.15,
+      "behavior": 0.32,
+      "bayesian": 0.16,
+      "timedecay": 0.12
+    }
+  },
+  "signal_contributions": {},
+  "convergence": {
+    "converged": false,
+    "frozen": false,
+    "consecutive_no_improve": 0
+  },
+  "optimization_history": []
 }
