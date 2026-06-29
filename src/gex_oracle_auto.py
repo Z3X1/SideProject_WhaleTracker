@@ -956,3 +956,90 @@ def generate_html(data, uft_result, collision, snapshot_num):
     css += learn_html
     css += '</body></html>'
     return css
+
+
+# ── Main ──────────────────────────────────────────────────────
+if __name__ == "__main__":
+    import os as _os_main, json as _json_main, sys as _sys_main
+
+    OUTPUT_DIR = os.environ.get("OUTPUT_DIR", "docs/oracle")
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    os.makedirs("data", exist_ok=True)
+
+    # 1. 讀市場數據
+    data_path = "data/oracle_market_data.json"
+    if not os.path.exists(data_path):
+        print(f"ERROR: {data_path} not found"); sys.exit(1)
+    with open(data_path) as f:
+        data = json.load(f)
+    print(f"Spot: ${data.get('spot',0):,.2f}  FR: {data.get('fr',0)*100:+.5f}%")
+
+    # 2. 讀/更新 snapshot counter
+    counter_path = "data/snapshot_counter.json"
+    if os.path.exists(counter_path):
+        with open(counter_path) as f:
+            counter = json.load(f)
+    else:
+        counter = {"count": 22}
+    snapshot_num = counter.get("count", 22) + 1
+    counter["count"] = snapshot_num
+    with open(counter_path, "w") as f:
+        json.dump(counter, f)
+    print(f"Snapshot: S{snapshot_num}")
+
+    # 3. 讀上一筆數據（用於行為信號計算）
+    prev_data = None
+    prev_path = "data/oracle_prev_data.json"
+    if os.path.exists(prev_path):
+        with open(prev_path) as f:
+            prev_data = json.load(f)
+    with open(prev_path, "w") as f:
+        json.dump(data, f)
+
+    # 4. UFT 計算
+    uft_result = calc_uft(data, prev_data)
+    print(f"UFT Median: ${uft_result['uft_median']:,.0f}  Regime: {uft_result['regime']}")
+
+    # 5. 碰撞分析
+    collision = generate_rule_based_collision(data, uft_result)
+
+    # 6. 記錄預測到 settlement_log（核心修復）
+    try:
+        _sys_main.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from uft_optimizer import record_prediction, check_and_record_settlement, optimize_weights
+        expiries_list = data.get("expiries", [])
+        main_expiry = expiries_list[0] if expiries_list else "N/A"
+        record_prediction(
+            snapshot_num=snapshot_num,
+            expiry=main_expiry,
+            predicted_median=uft_result["uft_median"],
+            predicted_mode=uft_result["uft_mode"],
+            components=uft_result.get("components", {}),
+            weights=uft_result.get("uft_weights", {}),
+            signals={
+                "fr":           data.get("fr"),
+                "skew":         uft_result.get("skew_main"),
+                "dvol":         data.get("dvol"),
+                "pcr_main":     data.get(f"pcr_atm_{main_expiry}"),
+                "macd_4h":      (data.get("macd", {}).get("4h") or {}).get("dif"),
+                "regime_pos":   1.0 if uft_result.get("regime") == "POS" else 0.0,
+                "gamma_flip":   float(uft_result.get("gamma_flip") or 0),
+                "contradiction":1.0 if uft_result.get("behavior_contradiction") else 0.0,
+            },
+            sigma=uft_result.get("sigma", 4000),
+            regime=uft_result.get("regime", "POS"),
+        )
+        print(f"Recorded S{snapshot_num} → {main_expiry} ${uft_result['uft_median']:,.0f}")
+        # 自動結算檢查
+        check_and_record_settlement()
+        # 10筆以上嘗試優化
+        optimize_weights(min_samples=10)
+    except Exception as _e:
+        print(f"record_prediction error: {_e}")
+
+    # 7. 生成 HTML
+    html = generate_html(data, uft_result, collision, snapshot_num)
+    out_path = os.path.join(OUTPUT_DIR, "index.html")
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write(html)
+    print(f"HTML written: {out_path} ({len(html):,} bytes)")
