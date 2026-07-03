@@ -464,33 +464,55 @@ def get_regime_weights(regime):
 # ── record_prediction（擴充 signal_snapshot + regime）─────────
 
 def record_prediction(snapshot_num, expiry, predicted_median, predicted_mode,
-                       components, weights, signals, sigma, regime=None):
-    """記錄預測（擴充：regime_at_prediction + weights_used）"""
+                       components, weights, signals, sigma, regime=None, t_days=None):
+    """
+    記錄預測。
+    t_days：記錄時距結算的剩餘天數（固定T值快照核心字段）。
+    固定T值設計：每個到期日只在 T=7/3/1/0d 各記一筆，
+    跨週期誤差對比才有學習意義。
+    去重邏輯：同一 expiry + 同一 T 窗口（±0.3d）只記一次。
+    """
     log = load_log()
-    existing = [r for r in log["records"]
-                if r["snapshot_num"] == snapshot_num and r["expiry"] == expiry]
-    if existing:
+
+    # 去重：同一 snapshot_num + expiry 不重複記
+    if any(r["snapshot_num"] == snapshot_num and r["expiry"] == expiry
+           for r in log["records"]):
         return
 
+    # 固定T值去重：同一 expiry + 相近 t_days（±0.3d）不重複記（硬觸發除外）
+    if t_days is not None:
+        TARGET_T = [7, 3, 1, 0]
+        for r in log["records"]:
+            if (r.get("expiry") == expiry and
+                r.get("t_days_at_record") is not None):
+                # 同一 T 窗口內已有記錄
+                if (any(abs(r["t_days_at_record"] - t) <= 0.3 for t in TARGET_T) and
+                    any(abs(t_days - t) <= 0.3 for t in TARGET_T) and
+                    any(abs(r["t_days_at_record"] - t) <= 0.3 and abs(t_days - t) <= 0.3
+                        for t in TARGET_T)):
+                    print(f"[SKIP-DUP] {expiry} T={t_days:.1f}d 此窗口已有 S{r['snapshot_num']} T={r['t_days_at_record']:.1f}d")
+                    return
+
     record = {
-        "snapshot_num": snapshot_num,
-        "expiry": expiry,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "predicted_median": round(predicted_median, 2),
-        "predicted_mode": round(predicted_mode, 2),
-        "sigma": round(sigma, 2),
-        "regime_at_prediction": regime,         # L3 Regime分層用
-        "actual_settlement": None,
-        "components": {k: round(float(v), 2) for k, v in components.items()},
-        "weights_used": {k: round(float(v), 5) for k, v in weights.items()},  # L1 double-weight修正用
-        "signals": {k: (round(float(v), 5) if v is not None else None)
-                    for k, v in signals.items()},
+        "snapshot_num":        snapshot_num,
+        "expiry":              expiry,
+        "timestamp":           datetime.now(timezone.utc).isoformat(),
+        "t_days_at_record":    round(t_days, 2) if t_days is not None else None,
+        "predicted_median":    round(predicted_median, 2),
+        "predicted_mode":      round(predicted_mode, 2),
+        "sigma":               round(sigma, 2),
+        "regime_at_prediction":regime,
+        "actual_settlement":   None,
+        "components":  {k: round(float(v), 2) for k, v in components.items()},
+        "weights_used":{k: round(float(v), 5) for k, v in weights.items()},
+        "signals":     {k: (round(float(v), 5) if v is not None else None)
+                        for k, v in signals.items()},
         "error_sigma": None,
-        "error_usd": None,
+        "error_usd":   None,
     }
     log["records"].append(record)
     save_log(log)
-    print(f"Recorded S{snapshot_num} {expiry}: ${predicted_median:,.0f} (regime={regime})")
+    print(f"Recorded S{snapshot_num} {expiry} T={t_days:.1f}d: ${predicted_median:,.0f} (regime={regime})")
 
 
 def record_settlement(expiry, actual_price):

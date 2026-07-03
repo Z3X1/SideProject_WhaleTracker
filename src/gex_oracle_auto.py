@@ -647,10 +647,11 @@ def generate_html(data, uft_result, collision, snapshot_num):
                     ec='#10b981' if (es or 99)<0.5 else ('#f59e0b' if (es or 99)<1.0 else '#ef4444')
                     as2=f'${ac:,.0f}'
                 else: es2='pending'; ec='var(--mut)'; as2='-'
-                rws+=f'<tr><td>S{sn}</td><td>{ex}</td><td>${prv:,.0f}</td><td>{as2}</td><td style="color:{ec}">{es2}</td></tr>'
+                td_v=rec.get('t_days_at_record'); td_s=f'T-{int(td_v)}d' if td_v is not None else '-'
+                rws+=f'<tr><td>S{sn}</td><td>{ex}</td><td style="color:var(--mut);font-size:9px">{td_s}</td><td>${prv:,.0f}</td><td>{as2}</td><td style="color:{ec}">{es2}</td></tr>'
             nd=len([x for x in lg.get('records',[]) if x.get('actual_settlement')])
             slh=(f'<div style="padding:0 10px 10px"><div class="card"><div class="ct">SETTLEMENT LOG - UFT ACCURACY TRACKER</div>'
-                 f'<table><thead><tr><th>S#</th><th>Expiry</th><th>Predicted</th><th>Actual</th><th>Error</th></tr></thead>'
+                 f'<table><thead><tr><th>S#</th><th>Expiry</th><th>T</th><th>Predicted</th><th>Actual</th><th>Error</th></tr></thead>'
                  f'<tbody>{rws}</tbody></table>'
                  f'<div style="font-size:9px;color:var(--mut);margin-top:4px">Optimizer: {nd}/10 samples for weight optimization</div></div></div>')
     except: pass
@@ -1079,33 +1080,77 @@ if __name__ == "__main__":
     # 5. 碰撞分析
     collision = generate_rule_based_collision(data, uft_result)
 
-    # 6. 記錄預測到 settlement_log（核心修復）
+    # 6. 記錄預測到 settlement_log
+    # 固定 T 值快照邏輯：每個到期日只在 T=7d/T=3d/T=1d/T=0d(結算前6h) 各記一筆
+    # 跨週期比較才有學習意義，避免同一到期日近百筆數據稀釋學習
     try:
         _sys_main.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-        from uft_optimizer import record_prediction, check_and_record_settlement, optimize_weights
+        from uft_optimizer import record_prediction, check_and_record_settlement, optimize_weights, load_log
         expiries_list = data.get("expiries", [])
         main_expiry = expiries_list[0] if expiries_list else "N/A"
-        record_prediction(
-            snapshot_num=snapshot_num,
-            expiry=main_expiry,
-            predicted_median=uft_result["uft_median"],
-            predicted_mode=uft_result["uft_mode"],
-            components=uft_result.get("components", {}),
-            weights=uft_result.get("uft_weights", {}),
-            signals={
-                "fr":           data.get("fr"),
-                "skew":         uft_result.get("skew_main"),
-                "dvol":         data.get("dvol"),
-                "pcr_main":     data.get(f"pcr_atm_{main_expiry}"),
-                "macd_4h":      (data.get("macd", {}).get("4h") or {}).get("dif"),
-                "regime_pos":   1.0 if uft_result.get("regime") == "POS" else 0.0,
-                "gamma_flip":   float(uft_result.get("gamma_flip") or 0),
-                "contradiction":1.0 if uft_result.get("behavior_contradiction") else 0.0,
-            },
-            sigma=uft_result.get("sigma", 4000),
-            regime=uft_result.get("regime", "POS"),
-        )
-        print(f"Recorded S{snapshot_num} → {main_expiry} ${uft_result['uft_median']:,.0f}")
+        dl = parse_days_to_expiry(main_expiry)
+
+        # 固定 T 值窗口（允許 ±6h 容差 = ±0.25d）
+        TARGET_T = [7, 3, 1, 0]   # T=0 = 結算日（結算前最後一次run）
+        T_TOLERANCE = 0.3          # ±0.3天 = ±7.2小時
+
+        should_record = any(abs(dl - t) <= T_TOLERANCE for t in TARGET_T)
+
+        # 硬性觸發也強制記錄（覆蓋 T 值限制）
+        if hard_triggers:
+            should_record = True
+
+        if should_record:
+            # 確認此 T 值窗口是否已有記錄（避免同一窗口記兩次）
+            opt_log = load_log()
+            existing = [r for r in opt_log.get("records", [])
+                        if r.get("expiry") == main_expiry
+                        and abs(parse_days_to_expiry(main_expiry) -
+                                (dl)) <= T_TOLERANCE  # 用 dl 近似
+                        and r.get("t_days_at_record") is not None
+                        and any(abs(r["t_days_at_record"] - t) <= T_TOLERANCE for t in TARGET_T)
+                        and any(abs(r["t_days_at_record"] - dl) <= T_TOLERANCE for t in TARGET_T)]
+            already_recorded = any(
+                r.get("expiry") == main_expiry and
+                r.get("t_days_at_record") is not None and
+                any(abs(r["t_days_at_record"] - t) <= T_TOLERANCE for t in TARGET_T) and
+                any(abs(r["t_days_at_record"] - dl) <= T_TOLERANCE)
+                for r in opt_log.get("records", [])
+            )
+            # 簡化：檢查同一到期日內最近記錄的 t_days_at_record 是否在同一窗口
+            recent_same_t = [r for r in opt_log.get("records", [])
+                             if r.get("expiry") == main_expiry
+                             and r.get("t_days_at_record") is not None
+                             and any(abs(r["t_days_at_record"] - dl) <= T_TOLERANCE for _ in [0])]
+            if recent_same_t and not hard_triggers:
+                print(f"[SKIP] S{snapshot_num} {main_expiry} T={dl}d 此窗口已有記錄，跳過")
+                should_record = False
+
+        if should_record:
+            record_prediction(
+                snapshot_num=snapshot_num,
+                expiry=main_expiry,
+                predicted_median=uft_result["uft_median"],
+                predicted_mode=uft_result["uft_mode"],
+                components=uft_result.get("components", {}),
+                weights=uft_result.get("uft_weights", {}),
+                signals={
+                    "fr":            data.get("fr"),
+                    "skew":          uft_result.get("skew_main"),
+                    "dvol":          data.get("dvol"),
+                    "pcr_main":      data.get(f"pcr_atm_{main_expiry}"),
+                    "macd_4h":       (data.get("macd_4h") or data.get("macd", {}).get("4h") or {}).get("dif"),
+                    "regime_pos":    1.0 if uft_result.get("regime") == "POS" else 0.0,
+                    "gamma_flip":    float(uft_result.get("gamma_flip") or 0),
+                    "contradiction": 1.0 if uft_result.get("behavior_contradiction") else 0.0,
+                },
+                sigma=uft_result.get("sigma", 4000),
+                regime=uft_result.get("regime", "POS"),
+                t_days=dl,  # 記錄此預測的剩餘天數（固定T值快照核心字段）
+            )
+            print(f"Recorded S{snapshot_num} → {main_expiry} T={dl}d ${uft_result['uft_median']:,.0f}")
+        else:
+            print(f"[NO RECORD] S{snapshot_num} {main_expiry} T={dl}d 不在固定T值窗口且無硬觸發")
         # 自動結算檢查
         check_and_record_settlement()
         # 10筆以上嘗試優化；若有新權重產生 → 觸發 S++

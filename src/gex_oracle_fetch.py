@@ -263,7 +263,7 @@ def fetch_all():
     data["macd"] = {}
     data["ema"] = {}
 
-    tf_map = {"15m": ("15m", 15), "4h": ("4h", 240), "1d": ("1d", 1440)}
+    tf_map = {"15m": ("15m", 15), "4h": ("4h", 240), "1d": ("1d", 1440)}  # flat keys: macd_15m, macd_4h, macd_1d
     for tf, (binance_tf, kraken_interval) in tf_map.items():
         got = False
         # Binance先試
@@ -278,6 +278,9 @@ def fetch_all():
                     dif, dea, macd = calc_macd(closes)
                     data["macd"][tf] = {"dif": dif, "dea": dea, "macd": macd}
                     data["ema"][tf] = {str(p): round(ema(closes,p),1) for p in [5,10,30,200] if len(closes)>=p}
+                    # 同時寫扁平 key（auto.py 用 macd_15m / macd_4h / macd_1d）
+                    flat_key = f"macd_{tf}"  # 15m→macd_15m, 4h→macd_4h, 1d→macd_1d
+                    data[flat_key] = {"dif": dif, "dea": dea, "macd": macd}
                     print(f"MACD {tf}: DIF={dif:.2f} ✅ (Binance)")
                     got = True; break
             except: pass
@@ -292,6 +295,8 @@ def fetch_all():
                 if len(closes) > 30:
                     dif, dea, macd = calc_macd(closes)
                     data["macd"][tf] = {"dif": dif, "dea": dea, "macd": macd}
+                    flat_key = f"macd_{tf}"
+                    data[flat_key] = {"dif": dif, "dea": dea, "macd": macd}
                     data["ema"][tf] = {str(p): round(ema(closes,p),1) for p in [5,10,30,200] if len(closes)>=p}
                     print(f"MACD {tf}: DIF={dif:.2f} ✅ (Kraken)")
                     got = True
