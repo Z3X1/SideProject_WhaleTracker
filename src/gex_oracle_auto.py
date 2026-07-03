@@ -348,7 +348,14 @@ def calc_uft(data, prev_data=None):
     T_main = _dl / 365
     sigma_main = spot * (data.get("dvol", 50) / 100) * _m2.sqrt(T_main)
     gf_dict = data.get("gamma_flip", {})
-    gamma_flip_main = int(gf_dict.get(exp_main, gex_center) or gex_center)
+    # 精確查找 → 找不到時取最近到期日的 GF（避免 fallback 到 Spot）
+    if exp_main in gf_dict and gf_dict[exp_main]:
+        gamma_flip_main = int(gf_dict[exp_main])
+    elif gf_dict:
+        # 取第一個有效 GF（最近到期日）
+        gamma_flip_main = int(next(v for v in gf_dict.values() if v))
+    else:
+        gamma_flip_main = int(gex_center) if gex_center != spot else int(spot * 0.95)
     regime = "POS" if spot > gamma_flip_main else "NEG"
     # Bayesian 動態收斂：T 越小越往 GEX Pin 收斂
     _t_factor = max(0.0, min(1.0, _dl / 30))
