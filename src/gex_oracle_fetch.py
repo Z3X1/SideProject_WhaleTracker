@@ -80,8 +80,14 @@ def get_dynamic_expiries():
         if exp > 0:
             expiry_dates.add(datetime.fromtimestamp(exp, tz=timezone.utc).date())
 
-    today = datetime.now(timezone.utc).date()
-    future_dates = sorted([e for e in expiry_dates if e > today])
+    now_utc = datetime.now(timezone.utc)
+    today = now_utc.date()
+    # 到期日當天在 UTC 08:00 前仍納入（結算在 08:00，之前仍有效）
+    cutoff = datetime(today.year, today.month, today.day, 8, 0, 0, tzinfo=timezone.utc)
+    if now_utc < cutoff:
+        future_dates = sorted([e for e in expiry_dates if e >= today])
+    else:
+        future_dates = sorted([e for e in expiry_dates if e > today])
 
     if not future_dates:
         return ["3JUL26", "31JUL26", "25SEP26"]
