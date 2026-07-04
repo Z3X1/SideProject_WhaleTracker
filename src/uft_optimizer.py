@@ -558,7 +558,12 @@ def check_and_record_settlement():
             )
             deliveries = r_api.json().get("result", {}).get("data", [])
             for d in deliveries:
-                d_date = date.fromtimestamp(d["date"] / 1000)
+                # Deribit date 格式：字串 "YYYY-MM-DD"（非 timestamp）
+                raw = d.get("date")
+                if isinstance(raw, str):
+                    d_date = date.fromisoformat(raw[:10])
+                else:
+                    d_date = date.fromtimestamp(float(raw) / 1000)
                 if d_date == expiry_date:
                     n = record_settlement(expiry_str, float(d["delivery_price"]))
                     print(f"Auto-settlement {expiry_str}: ${float(d['delivery_price']):,.2f} ({n}筆)")
