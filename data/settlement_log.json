@@ -685,11 +685,11 @@
     }
   ],
   "current_weights": {
-    "gbm": 0.2775,
-    "gex": 0.1665,
-    "behavior": 0.3246,
-    "bayesian": 0.1204,
-    "timedecay": 0.111
+    "gbm": 0.26175,
+    "gex": 0.15705,
+    "behavior": 0.35728,
+    "bayesian": 0.11922,
+    "timedecay": 0.1047
   },
   "weight_history": [
     {
@@ -743,9 +743,61 @@
       "avg_error_sigma": 0.673,
       "improvement_pct": 0.47,
       "frozen": false
+    },
+    {
+      "timestamp": "2026-07-04T05:43:23.296813+00:00",
+      "samples": 17,
+      "old_weights": {
+        "gbm": 0.2775,
+        "gex": 0.1665,
+        "behavior": 0.3246,
+        "bayesian": 0.1204,
+        "timedecay": 0.111
+      },
+      "new_weights": {
+        "gbm": 0.26175,
+        "gex": 0.15705,
+        "behavior": 0.35728,
+        "bayesian": 0.11922,
+        "timedecay": 0.1047
+      },
+      "regime_weights": {
+        "POS": {
+          "gbm": 0.28,
+          "gex": 0.2,
+          "behavior": 0.28,
+          "bayesian": 0.12,
+          "timedecay": 0.12
+        },
+        "NEG": {
+          "gbm": 0.25,
+          "gex": 0.15,
+          "behavior": 0.32,
+          "bayesian": 0.16,
+          "timedecay": 0.12
+        }
+      },
+      "l1_weights": {
+        "gbm": 0.2775,
+        "gex": 0.1665,
+        "behavior": 0.3246,
+        "bayesian": 0.1204,
+        "timedecay": 0.111
+      },
+      "l4_weights": {
+        "gbm": 0.225,
+        "gex": 0.135,
+        "behavior": 0.43354,
+        "bayesian": 0.11646,
+        "timedecay": 0.09
+      },
+      "avg_error_usd": 1771.51,
+      "avg_error_sigma": 0.672,
+      "improvement_pct": 0.32,
+      "frozen": false
     }
   ],
-  "last_optimized": "2026-07-04T05:41:36.494319+00:00",
+  "last_optimized": "2026-07-04T05:43:23.296842+00:00",
   "regime_weights": {
     "POS": {
       "gbm": 0.28,
@@ -797,9 +849,10 @@
   "convergence": {
     "converged": false,
     "frozen": false,
-    "consecutive_no_improve": 0,
+    "consecutive_no_improve": 1,
     "avg_error_sigma_history": [
-      0.673
+      0.673,
+      0.672
     ]
   },
   "optimization_history": [
@@ -807,6 +860,12 @@
       "ts": "2026-07-04T05:41:36.494316+00:00",
       "n": 17,
       "err_sigma": 0.673,
+      "frozen": false
+    },
+    {
+      "ts": "2026-07-04T05:43:23.296837+00:00",
+      "n": 17,
+      "err_sigma": 0.672,
       "frozen": false
     }
   ]
