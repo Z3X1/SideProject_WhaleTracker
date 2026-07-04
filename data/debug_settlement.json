@@ -1,0 +1,59 @@
+{
+  "steps": [
+    {
+      "expiry": "10JUL26",
+      "expiry_date": "2026-07-10",
+      "today_lt_expiry": true
+    }
+  ],
+  "pending": [
+    "10JUL26"
+  ],
+  "api_status": 200,
+  "api_raw": {
+    "data": [
+      {
+        "date": "2026-07-03",
+        "delivery_price": 61726.92
+      },
+      {
+        "date": "2026-07-02",
+        "delivery_price": 60077.52
+      },
+      {
+        "date": "2026-07-01",
+        "delivery_price": 58649.17
+      },
+      {
+        "date": "2026-06-30",
+        "delivery_price": 59429.42
+      },
+      {
+        "date": "2026-06-29",
+        "delivery_price": 59996.77
+      },
+      {
+        "date": "2026-06-28",
+        "delivery_price": 60114.78
+      },
+      {
+        "date": "2026-06-27",
+        "delivery_price": 60381.4
+      },
+      {
+        "date": "2026-06-26",
+        "delivery_price": 60520.66
+      },
+      {
+        "date": "2026-06-25",
+        "delivery_price": 61788.17
+      },
+      {
+        "date": "2026-06-24",
+        "delivery_price": 62591.53
+      }
+    ],
+    "records_total": 2535
+  },
+  "today": "2026-07-04"
+}
