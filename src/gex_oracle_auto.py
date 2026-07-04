@@ -235,24 +235,40 @@ def collect_all_data():
 
 def calc_gex_structure(options, spot):
     # 計算GEX Structure:Pin水位,PCR,Gamma Flip
+    # 注意：JSON 載入後 strike key 一定是字串，必須轉 float
     if not options:
         return {"pin": spot, "pcr": 1.0, "gamma_flip": spot - 2000}
 
+    opts = {}
+    for k, v in options.items():
+        try:
+            opts[float(k)] = v
+        except (ValueError, TypeError):
+            continue
+    if not opts:
+        return {"pin": spot, "pcr": 1.0, "gamma_flip": spot - 2000}
+
     # PCR(OI加權)
-    total_call_oi = sum(v["call_oi"] for v in options.values())
-    total_put_oi = sum(v["put_oi"] for v in options.values())
+    total_call_oi = sum(float(v.get("call_oi", 0)) for v in opts.values())
+    total_put_oi = sum(float(v.get("put_oi", 0)) for v in opts.values())
     pcr = total_put_oi / total_call_oi if total_call_oi > 0 else 1.0
 
-    # ATM Put Wall(最大Put OI在Spot附近)
-    atm_range = {k: v for k, v in options.items() if abs(k - spot) < 5000}
+    # GEX Pin：ATM ±8% 內「距離加權總 OI」最大的行使價
+    # Gamma 集中度 ∝ OI × ATM鄰近度（ATM Gamma 最大，遠離線性衰減）
+    # 純總 OI 會被 Call/Put Wall（牆在邊緣）拉偏，加權後排除
+    _band = spot * 0.08
+    atm_range = {k: v for k, v in opts.items() if abs(k - spot) < _band}
     if atm_range:
-        max_put_strike = max(atm_range, key=lambda k: atm_range[k]["put_oi"])
-        pin = max_put_strike
+        def _pin_score(k):
+            oi_tot = float(atm_range[k].get("call_oi", 0)) + float(atm_range[k].get("put_oi", 0))
+            proximity = 1.0 - abs(k - spot) / _band   # ATM=1.0 → 邊緣=0
+            return oi_tot * proximity
+        pin = max(atm_range, key=_pin_score)
     else:
         pin = round(spot / 1000) * 1000  # 最近千位
 
     return {
-        "pin": pin,
+        "pin": int(pin),
         "pcr": pcr,
         "total_call_oi": total_call_oi,
         "total_put_oi": total_put_oi,
@@ -282,9 +298,12 @@ def calc_uft(data, prev_data=None):
     T = 7 / 365  # 暫時，後面動態覆蓋
     sigma = spot * dvol * math.sqrt(T)
 
-    # GEX成分
-    opts_3jul = data.get("options_3JUL26", {})
-    gex = calc_gex_structure(opts_3jul, spot)
+    # GEX成分：用主到期日的實際期權鏈（動態 key，非硬碼）
+    _exps_early = data.get("expiries", ["3JUL26","31JUL26","25SEP26"])
+    _exp_main_early = _exps_early[0] if _exps_early else "3JUL26"
+    opts_main = (data.get("options", {}) or {}).get(_exp_main_early) \
+                or data.get(f"options_{_exp_main_early}", {})
+    gex = calc_gex_structure(opts_main, spot)
     gex_center = gex["pin"]
 
     # BehaviorSignal成分(L/S已移除,用FR+PCR+Skew)
@@ -466,7 +485,9 @@ def generate_rule_based_collision(data, uft_result):
     else: bear_pts+=2
     if fr>0.005: bull_pts+=1
     elif fr<-0.005: bear_pts+=1
-    if skew_main>5: bear_pts+=2
+    _skd=float(uft_result.get("skew_demeaned",0) or 0)
+    if _skd>3: bear_pts+=2   # 去均值：比自身常態更恐慌才算空方信號
+    elif skew_main>5 and uft_result.get("skew_baseline") is None: bear_pts+=2  # 無基線fallback
     elif skew_main<-2: bull_pts+=1
     if dif_1d<-500: bear_pts+=2
     elif dif_1d>500: bull_pts+=1
@@ -647,7 +668,11 @@ def generate_html(data, uft_result, collision, snapshot_num):
     if regime=='POS': ru.append(f'R#10 POS Regime (GF ${gf_main:,})')
     if fr>0.005: ru.append('R#5 FR bullish (>0.005%)')
     elif fr<-0.005: ru.append('R#5 FR bearish (<-0.005%)')
-    if (sk0 or 0)>5: ru.append(f'R#Skew Strong bearish +{sk0:.1f}%')
+    _skd0=float(uft_result.get('skew_demeaned',0) or 0); _skb0=uft_result.get('skew_baseline')
+    if _skb0 is not None:
+        if _skd0>3: ru.append(f'R#Skew 恐慌偏離 {_skd0:+.1f}% (raw {sk0:+.1f}% vs 基線 {_skb0:+.1f}%)')
+        elif _skd0<-3: ru.append(f'R#Skew 緩和偏離 {_skd0:+.1f}% (raw {sk0:+.1f}% vs 基線 {_skb0:+.1f}%)')
+    elif (sk0 or 0)>5: ru.append(f'R#Skew Strong bearish +{sk0:.1f}% (無基線)')
     dif1=float((data.get('macd_1d') or data.get('macd',{}).get('1d',{})).get('dif',0))
     if dif1<-1000: ru.append(f'R#2 1D DIF deeply negative ({dif1:.0f})')
     aiv=float(data.get(f'atm_iv_{exp0}',dvol) or dvol); ivp=aiv-dvol
@@ -742,7 +767,15 @@ def generate_html(data, uft_result, collision, snapshot_num):
         f'<div id="main">'
     )
     css+=f'<div class="hdr"><div><div class="ht">GEX ORACLE AUTO S{snapshot_num}</div>'
-    css+=f'<div class="hs">UFT v2.0 | {ts} UTC | 6h | <span style="color:{agc}">updated {ags}</span></div>'
+    css+=f'<div class="hs">UFT v2.0 | {ts} UTC | 6h | <span style="color:{agc}">updated <span id="ago">{ags}</span></span></div>'
+    # JS 動態刷新 "updated Xm ago"（原為生成時烙死的靜態文字，永遠顯示 0m ago）
+    _gen_iso = data.get("timestamp", "")
+    css+=("<script>var _GEN='" + str(_gen_iso) + "';"
+          "function _ago(){var g=new Date(_GEN);if(isNaN(g.getTime()))return;"
+          "var m=Math.floor((Date.now()-g.getTime())/60000);if(m<0)m=0;"
+          "var t=(m<60)?(m+'m ago'):(Math.floor(m/60)+'h'+(m%60)+'m ago');"
+          "var e=document.getElementById('ago');if(e)e.textContent=t;}"
+          "_ago();setInterval(_ago,60000);</script>")
     css+=f'<div class="hs">FR next: <span style="color:var(--cyan)">{fns}</span> | Acc: <span style="color:{frc}">{facc:+.5f}%</span> | Pin Risk: <span style="color:{prc};font-weight:bold">{pr}</span></div>'
     css+='</div>'
     css+=f'<div style="text-align:right"><div style="font-size:9px;color:var(--mut)">BTC/USDT PERP | Regime: <span style="color:{rc};font-weight:bold">{regime}</span> | GF: ${gf_main:,} | {cd}</div>'
@@ -955,7 +988,8 @@ def generate_html(data, uft_result, collision, snapshot_num):
             _cn2 = len([r for r in _ll2.get('records',[]) if r.get('actual_settlement')])
             _tn2 = len(_ll2.get('records',[]))
             _frozen2 = _cv2.get('frozen', False)
-            _conv_s = '已收斂凍結' if _frozen2 else f'學習中 ({_cn2}/10樣本)'
+            _ncyc2 = len(set(r.get('expiry') for r in _ll2.get('records',[]) if r.get('actual_settlement') and not r.get('corrupted_gex')))
+            _conv_s = '已收斂凍結' if _frozen2 else f'學習中 ({_cn2}樣本/{_ncyc2}週期, 需≥3週期)'
             _conv_c2 = '#10b981' if _frozen2 else '#f59e0b'
             _err_h2 = _cv2.get('avg_error_sigma_history', [])
             learn_html += f'<div class="card" style="margin-bottom:10px"><div class="ct">學習系統狀態</div>'
@@ -992,7 +1026,8 @@ def generate_html(data, uft_result, collision, snapshot_num):
                 learn_html += '</div>'
             if _wh2:
                 learn_html += '<div class="card"><div class="ct">最近優化記錄 (最多5次)</div>'
-                for h2 in _wh2[-5:][::-1]:
+                _wh2v=[h for h in _wh2 if 'note' not in h]
+                for h2 in _wh2v[-5:][::-1]:
                     _ts_h = str(h2.get('timestamp',''))[:16]
                     _frz2 = '🔒' if h2.get('frozen') else '🔄'
                     learn_html += (f'<div style="font-size:9px;padding:4px 0;border-bottom:1px solid var(--border)">'
@@ -1052,11 +1087,22 @@ if __name__ == "__main__":
 
     hard_triggers = []
 
-    # FR 穿越：-0.01 / -0.005 / 0 / +0.005 / +0.01（符號改變或越過閾值）
+    # FR 穿越（帶遲滯）：閾值 ±0.01/±0.005/0
+    # 遲滯設計：每個閾值觸發後記入 armed_fr_thresholds=False，
+    # 須 FR 離開閾值 >0.002% 才重新武裝——防止 FR 在閾值附近抖動導致 S# churn
+    # （S44→S49 五連跳的根因：FR 在 +0.005% 來回 0.00511→0.00477）
     fr_thresholds = [-0.01, -0.005, 0.0, 0.005, 0.01]
+    HYSTERESIS = 0.002
+    armed = counter.get("fr_armed", {str(t): True for t in fr_thresholds})
     for thr in fr_thresholds:
-        if (last_fr < thr <= fr) or (last_fr > thr >= fr):
+        key = str(thr)
+        crossed = (last_fr < thr <= fr) or (last_fr > thr >= fr)
+        if crossed and armed.get(key, True):
             hard_triggers.append(f"FR穿越{thr:+.3f}%（{last_fr:+.5f}→{fr:+.5f}）")
+            armed[key] = False          # 觸發後解除武裝
+        elif not armed.get(key, True) and abs(fr - thr) > HYSTERESIS:
+            armed[key] = True           # 遠離閾值 → 重新武裝
+    counter["fr_armed"] = armed
 
     # Spot 移動 > ±0.5σ
     if sigma > 0 and abs(spot - last_spot) > 0.5 * sigma:
