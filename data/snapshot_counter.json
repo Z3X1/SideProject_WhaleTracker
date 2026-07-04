@@ -1,13 +1,13 @@
 {
-  "last_snapshot": 46,
+  "last_snapshot": 47,
   "last_data": {
     "uft_median": 60288
   },
-  "count": 46,
-  "last_spot": 62476.965,
-  "last_fr": 0.0027916266699000002,
+  "count": 47,
+  "last_spot": 62483.965,
+  "last_fr": 0.0028233295634,
   "last_ls": 0,
-  "last_oi": 3.1702,
+  "last_oi": 3.17,
   "hard_triggers": [],
-  "last_trigger_ts": "2026-07-04T05:41:36.007242+00:00"
+  "last_trigger_ts": "2026-07-04T05:43:22.945068+00:00"
 }
