@@ -33,7 +33,8 @@
         "contradiction": 1.0
       },
       "error_sigma": 0.2434,
-      "error_usd": 1050.86
+      "error_usd": 1050.86,
+      "corrupted_gex": true
     },
     {
       "snapshot_num": 24,
@@ -68,7 +69,8 @@
         "contradiction": 1.0
       },
       "error_sigma": 0.2434,
-      "error_usd": 1050.87
+      "error_usd": 1050.87,
+      "corrupted_gex": true
     },
     {
       "snapshot_num": 26,
@@ -103,7 +105,8 @@
         "contradiction": 0.0
       },
       "error_sigma": 0.4726,
-      "error_usd": 2022.05
+      "error_usd": 2022.05,
+      "corrupted_gex": true
     },
     {
       "snapshot_num": 28,
@@ -139,7 +142,8 @@
         "contradiction": 0.0
       },
       "error_sigma": 0.3673,
-      "error_usd": 1214.87
+      "error_usd": 1214.87,
+      "corrupted_gex": true
     },
     {
       "snapshot_num": 29,
@@ -175,7 +179,8 @@
         "contradiction": 0.0
       },
       "error_sigma": 0.753,
-      "error_usd": 2090.15
+      "error_usd": 2090.15,
+      "corrupted_gex": true
     },
     {
       "snapshot_num": 30,
@@ -211,7 +216,8 @@
         "contradiction": 0.0
       },
       "error_sigma": 0.8397,
-      "error_usd": 2321.96
+      "error_usd": 2321.96,
+      "corrupted_gex": true
     },
     {
       "snapshot_num": 31,
@@ -247,7 +253,8 @@
         "contradiction": 0.0
       },
       "error_sigma": 1.2791,
-      "error_usd": 3507.0
+      "error_usd": 3507.0,
+      "corrupted_gex": true
     },
     {
       "snapshot_num": 32,
@@ -283,7 +290,8 @@
         "contradiction": 0.0
       },
       "error_sigma": 1.1921,
-      "error_usd": 3258.81
+      "error_usd": 3258.81,
+      "corrupted_gex": true
     },
     {
       "snapshot_num": 33,
@@ -319,7 +327,8 @@
         "contradiction": 0.0
       },
       "error_sigma": 1.1748,
-      "error_usd": 2639.92
+      "error_usd": 2639.92,
+      "corrupted_gex": true
     },
     {
       "snapshot_num": 34,
@@ -355,7 +364,8 @@
         "contradiction": 0.0
       },
       "error_sigma": 1.4468,
-      "error_usd": 3217.68
+      "error_usd": 3217.68,
+      "corrupted_gex": true
     },
     {
       "snapshot_num": 35,
@@ -391,7 +401,8 @@
         "contradiction": 0.0
       },
       "error_sigma": 0.5798,
-      "error_usd": 1341.67
+      "error_usd": 1341.67,
+      "corrupted_gex": true
     },
     {
       "snapshot_num": 36,
@@ -427,7 +438,8 @@
         "contradiction": 0.0
       },
       "error_sigma": 0.4749,
-      "error_usd": 1105.06
+      "error_usd": 1105.06,
+      "corrupted_gex": true
     },
     {
       "snapshot_num": 37,
@@ -463,7 +475,8 @@
         "contradiction": 0.0
       },
       "error_sigma": 0.6721,
-      "error_usd": 1126.72
+      "error_usd": 1126.72,
+      "corrupted_gex": true
     },
     {
       "snapshot_num": 38,
@@ -499,7 +512,8 @@
         "contradiction": 0.0
       },
       "error_sigma": 0.2601,
-      "error_usd": 442.91
+      "error_usd": 442.91,
+      "corrupted_gex": true
     },
     {
       "snapshot_num": 39,
@@ -535,7 +549,8 @@
         "contradiction": 0.0
       },
       "error_sigma": 0.0814,
-      "error_usd": 139.58
+      "error_usd": 139.58,
+      "corrupted_gex": true
     },
     {
       "snapshot_num": 40,
@@ -571,7 +586,8 @@
         "contradiction": 0.0
       },
       "error_sigma": 0.1074,
-      "error_usd": 182.74
+      "error_usd": 182.74,
+      "corrupted_gex": true
     },
     {
       "snapshot_num": 41,
@@ -685,11 +701,11 @@
     }
   ],
   "current_weights": {
-    "gbm": 0.26175,
-    "gex": 0.15705,
-    "behavior": 0.35728,
-    "bayesian": 0.11922,
-    "timedecay": 0.1047
+    "gbm": 0.3,
+    "gex": 0.18,
+    "behavior": 0.28,
+    "bayesian": 0.12,
+    "timedecay": 0.12
   },
   "weight_history": [
     {
@@ -795,6 +811,17 @@
       "avg_error_sigma": 0.672,
       "improvement_pct": 0.32,
       "frozen": false
+    },
+    {
+      "timestamp": "2026-07-04T06:30:00+00:00",
+      "note": "MANUAL ROLLBACK to v2.0 baseline \u2014 n=17 single-cycle samples statistically invalid (effective n=1), S23-S40 gex components corrupted (GEX Pin=Spot bug)",
+      "new_weights": {
+        "gbm": 0.3,
+        "gex": 0.18,
+        "behavior": 0.28,
+        "bayesian": 0.12,
+        "timedecay": 0.12
+      }
     }
   ],
   "last_optimized": "2026-07-04T05:43:23.296842+00:00",
@@ -849,11 +876,8 @@
   "convergence": {
     "converged": false,
     "frozen": false,
-    "consecutive_no_improve": 1,
-    "avg_error_sigma_history": [
-      0.673,
-      0.672
-    ]
+    "consecutive_no_improve": 0,
+    "avg_error_sigma_history": []
   },
   "optimization_history": [
     {
