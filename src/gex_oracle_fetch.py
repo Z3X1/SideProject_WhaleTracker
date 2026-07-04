@@ -606,7 +606,8 @@ def fetch_all():
                 skew_hist = json.load(f)
         skew_entry = {
             "ts": data.get("timestamp","")[:16],
-            "skew": {exp: data.get("skew",{}).get(exp) for exp in expiries}
+            "skew": {exp: data.get("skew",{}).get(exp) for exp in expiries},
+            "pcr":  {exp: data.get(f"pcr_atm_{exp}") for exp in expiries},  # PCR滾動基線用
         }
         skew_hist.append(skew_entry)
         skew_hist = skew_hist[-48:]  # 保留最近48個快照（約12天）

@@ -73,6 +73,32 @@ def _recent_weight(record_idx, total, half_life=10):
     age = total - 1 - record_idx  # 0=最新, 越大越舊
     return math.exp(-0.693 * age / half_life)  # 0.693 = ln(2)
 
+def _cluster_weights(samples):
+    """
+    週期聚類權重：每個結算週期（expiry）總權重相等，
+    避免單週期大量快照主導損失函數。
+    週期內：T 值大的樣本權重高（T-7d 預測比 T-0d 更有資訊量，
+    T-0d 時 Spot≈結算價，預測無難度）。
+    返回與 samples 等長的權重 list（總和=1）。
+    """
+    from collections import defaultdict
+    by_cycle = defaultdict(list)
+    for i, r in enumerate(samples):
+        by_cycle[r["expiry"]].append(i)
+    n_cycles = len(by_cycle)
+    weights = [0.0] * len(samples)
+    for expiry, idxs in by_cycle.items():
+        cycle_total = 1.0 / n_cycles
+        # 週期內按 t_days 加權（T大者權重高）；缺 t_days 用均分
+        t_vals = []
+        for i in idxs:
+            td = samples[i].get("t_days_at_record")
+            t_vals.append(max(0.5, td) if td is not None else 1.0)
+        t_sum = sum(t_vals)
+        for j, i in enumerate(idxs):
+            weights[i] = cycle_total * (t_vals[j] / t_sum)
+    return weights
+
 def load_log():
     if os.path.exists(LOG_PATH):
         with open(LOG_PATH) as f:
@@ -126,9 +152,13 @@ def _gradient_descent(completed, initial_w_dict, iterations=800, lr=0.0008, regi
     w = [initial_w_dict.get(k, 0.2) for k in KEYS]
     n = len(samples)
 
-    # 預計算衰減權重
-    decay = [_recent_weight(i, n) for i in range(n)]
-    decay_sum = sum(decay)
+    # 週期聚類權重（每週期等權，週期內按T值分配）× 時間衰減
+    cluster_w = _cluster_weights(samples)
+    time_w = [_recent_weight(i, n) for i in range(n)]
+    decay = [c * t for c, t in zip(cluster_w, time_w)]
+    _ds = sum(decay)
+    decay = [x / _ds for x in decay]
+    decay_sum = 1.0
 
     def weighted_mse(weights):
         total = 0.0
@@ -266,7 +296,9 @@ def _bayesian_weight_update(completed, current_weights, prior_strength=3.0):
 
     # 計算每個 component 的預測貢獻（leave-one-out 敏感度）
     n = len(completed)
-    decay = [_recent_weight(i, n) for i in range(n)]
+    cluster_w = _cluster_weights(completed)
+    time_w = [_recent_weight(i, n) for i in range(n)]
+    decay = [c * t for c, t in zip(cluster_w, time_w)]
     decay_sum = sum(decay)
 
     base_mse = 0.0
@@ -350,18 +382,32 @@ def _check_convergence(log, new_error_sigma, old_error_sigma):
 
 # ── 主優化入口 ────────────────────────────────────────────────
 
-def optimize_weights(min_samples=10):
+def optimize_weights(min_samples=10, min_cycles=3):
     """
     5層迭代學習：
-    L1 梯度下降（滾動衰減） → L2 信號貢獻度 → L3 Regime分層
+    L1 梯度下降（滾動衰減+週期聚類降權） → L2 信號貢獻度 → L3 Regime分層
     → L4 貝葉斯更新 → L5 收斂偵測
-    融合策略：L1(0.5) + L4(0.3) + Regime差異調整(0.2)
+    融合策略：L1(0.5) + L4(0.3) + 當前(0.2)
+
+    統計門檻（雙重）：
+      1. 總樣本 >= min_samples
+      2. 不同結算週期（expiry）>= min_cycles
+    理由：同一到期日的多筆快照高度自相關（actual 相同、資訊重疊），
+    有效自由度 ≈ 週期數，不是快照數。單週期 n=17 統計上 ≈ n=1。
+
+    污染樣本：corrupted_gex=True 的記錄完全剔除
+    （S23-S40 GEX Pin=Spot bug 期間，gex/timedecay 分量無效）。
     """
     log = load_log()
-    completed = [r for r in log["records"] if r.get("actual_settlement") is not None]
+    completed = [r for r in log["records"]
+                 if r.get("actual_settlement") is not None
+                 and not r.get("corrupted_gex", False)]  # 剔除污染樣本
 
-    if len(completed) < min_samples:
-        print(f"樣本不足 ({len(completed)}/{min_samples})，跳過優化")
+    n_cycles = len(set(r["expiry"] for r in completed))
+
+    if len(completed) < min_samples or n_cycles < min_cycles:
+        print(f"樣本不足 (records={len(completed)}/{min_samples}, "
+              f"cycles={n_cycles}/{min_cycles})，跳過優化")
         return log["current_weights"]
 
     # 若已收斂且未解凍，直接返回
@@ -402,7 +448,9 @@ def optimize_weights(min_samples=10):
     # ── 計算誤差改善 ──
     fallback = current
     n = len(completed)
-    decay = [_recent_weight(i, n) for i in range(n)]
+    cluster_w = _cluster_weights(completed)
+    time_w = [_recent_weight(i, n) for i in range(n)]
+    decay = [c * t for c, t in zip(cluster_w, time_w)]
     decay_sum = sum(decay)
 
     def mse_with_weights(w_dict):
@@ -464,7 +512,8 @@ def get_regime_weights(regime):
 # ── record_prediction（擴充 signal_snapshot + regime）─────────
 
 def record_prediction(snapshot_num, expiry, predicted_median, predicted_mode,
-                       components, weights, signals, sigma, regime=None, t_days=None):
+                       components, weights, signals, sigma, regime=None, t_days=None,
+                       spot_at_record=None):
     """
     記錄預測。
     t_days：記錄時距結算的剩餘天數（固定T值快照核心字段）。
@@ -502,6 +551,7 @@ def record_prediction(snapshot_num, expiry, predicted_median, predicted_mode,
         "predicted_mode":      round(predicted_mode, 2),
         "sigma":               round(sigma, 2),
         "regime_at_prediction":regime,
+        "spot_at_record":      round(spot_at_record, 2) if spot_at_record else None,  # EMH基準
         "actual_settlement":   None,
         "components":  {k: round(float(v), 2) for k, v in components.items()},
         "weights_used":{k: round(float(v), 5) for k, v in weights.items()},
@@ -526,6 +576,12 @@ def record_settlement(expiry, actual_price):
             sigma = record.get("sigma", 4000)
             record["error_usd"] = round(error_usd, 2)
             record["error_sigma"] = round(error_usd / sigma if sigma > 0 else 0, 4)
+            # EMH 基準：直接用記錄時 Spot 當預測的誤差（模型必須贏這個才有 alpha）
+            spot_rec = record.get("spot_at_record")
+            if spot_rec:
+                emh_err = abs(actual_price - spot_rec)
+                record["emh_error_usd"] = round(emh_err, 2)
+                record["beats_emh"] = bool(error_usd < emh_err)
             updated += 1
             print(f"Settlement S{record['snapshot_num']} {expiry}: "
                   f"pred=${record['predicted_median']:,.0f}, actual=${actual_price:,.0f}, "

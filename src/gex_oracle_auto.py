@@ -296,11 +296,30 @@ def calc_uft(data, prev_data=None):
     fr = data.get("fr", 0)
     oi_change = (data.get("oi",0) - prev_data.get("oi",0)) if prev_data else 0
     skew_main = data.get("skew", {}).get(expiries[0] if expiries else "3JUL26", 0) or 0
+    # ── Skew 去均值：BTC Skew 結構性長期為正（下行保護永遠有溢價），
+    # 絕對值不是方向信號；有效信號 = 當前值相對自身滾動基線的偏離
+    skew_baseline = None
+    try:
+        if os.path.exists("data/skew_history.json"):
+            with open("data/skew_history.json") as _fsk:
+                _sk_hist = json.load(_fsk)
+            _exp0_sk = expiries[0] if expiries else None
+            _vals = [e["skew"].get(_exp0_sk) for e in _sk_hist
+                     if e.get("skew", {}).get(_exp0_sk) is not None]
+            # 跨到期日 fallback：主到期切換後歷史不足時，用所有到期日的值
+            if len(_vals) < 8:
+                _vals = [v for e in _sk_hist for v in e.get("skew", {}).values() if v is not None]
+            if len(_vals) >= 8:
+                skew_baseline = sum(_vals) / len(_vals)
+    except Exception:
+        pass
+    skew_demeaned = (skew_main - skew_baseline) if skew_baseline is not None else 0.0
     # FR信號方向
     fr_signal = 1 if fr > 0 else -1
     fr_strength = min(abs(fr) / 0.0001, 1.0)
-    # Skew信號(正skew=偏空,負skew=偏多)
-    skew_signal = -1 if skew_main > 2 else (1 if skew_main < -2 else 0)
+    # Skew信號：用去均值Skew（相對滾動基線的偏離），非絕對值
+    # 偏離>+2%=比常態更恐慌(偏空)；<-2%=比常態更貪婪(偏多)；基線缺失時信號=0
+    skew_signal = -1 if skew_demeaned > 2 else (1 if skew_demeaned < -2 else 0)
     # T≤7d時Skew信號衰減（結算前Skew多為hedge非方向）
     _skew_decay=0.5 if _dl<=7 else 1.0
     skew_signal=skew_signal*_skew_decay
@@ -310,7 +329,23 @@ def calc_uft(data, prev_data=None):
     pcr_otm = data.get(f"pcr_otm_{exp_main}", 0)
     # ATM PCR更能反映即時方向
     pcr_use = pcr_atm if pcr_atm > 0 else (pcr_ratio := sum(float(v.get("put_oi",0)) for v in data.get("options",{}).get(exp_main,{}).values()) / max(sum(float(v.get("call_oi",0)) for v in data.get("options",{}).get(exp_main,{}).values()), 1))
-    pcr_signal = -1 if pcr_use > 1.3 else (1 if pcr_use < 0.6 else 0)
+    # PCR 去均值：與 Skew 同理，絕對閾值(1.3/0.6)僅在無基線時使用
+    pcr_baseline = None
+    try:
+        if os.path.exists("data/skew_history.json"):
+            with open("data/skew_history.json") as _fp:
+                _p_hist = json.load(_fp)
+            _pvals = [e.get("pcr", {}).get(exp_main) for e in _p_hist
+                      if e.get("pcr", {}).get(exp_main)]
+            if len(_pvals) >= 8:
+                pcr_baseline = sum(_pvals) / len(_pvals)
+    except Exception:
+        pass
+    if pcr_baseline:
+        _pcr_dev = pcr_use - pcr_baseline
+        pcr_signal = -1 if _pcr_dev > 0.3 else (1 if _pcr_dev < -0.3 else 0)
+    else:
+        pcr_signal = -1 if pcr_use > 1.3 else (1 if pcr_use < 0.6 else 0)
 
     # OI變化方向(新增信號)
     oi_change = float(data.get("oi_change", 0) or 0)
@@ -340,7 +375,7 @@ def calc_uft(data, prev_data=None):
                 + pcr_signal * 0.20 + oi_signal * 0.10
                 + basis_signal * 0.05 + whale_signal * 0.05)
     behavior_signal = max(-1, min(1, raw_signal))
-    contradiction = bool(fr > 0.005 and skew_main > 5)
+    contradiction = bool(fr > 0.005 and skew_demeaned > 5)  # FR多 vs Skew異常恐慌（去均值後）
     # behavior 懲罰因子（不縮減權重，縮減信號強度）
     behavior_penalty = 0.7 if contradiction else 1.0
     import math as _m2
@@ -391,7 +426,9 @@ def calc_uft(data, prev_data=None):
         "uft_median": round(uft, 2), "uft_mode": gex_center, "uft_emh": spot,
         "sigma": round(sigma_main, 2), "regime": regime, "gamma_flip": gamma_flip_main,
         "behavior_contradiction": contradiction, "behavior_penalty": behavior_penalty,
-        "skew_main": skew_main, "uft_weights": bw,
+        "skew_main": skew_main, "skew_demeaned": round(skew_demeaned, 2),
+        "skew_baseline": round(skew_baseline, 2) if skew_baseline is not None else None,
+        "uft_weights": bw,
         "components": {
             "gbm":       round(bw["gbm"] * spot, 2),
             "gex":       round(bw["gex"] * gex_center, 2),
@@ -644,16 +681,23 @@ def generate_html(data, uft_result, collision, snapshot_num):
                 prv=rec.get('predicted_median',0); ac=rec.get('actual_settlement'); es=rec.get('error_sigma')
                 if ac:
                     es2=f'${abs(ac-prv):,.0f} ({es:.2f}s)' if es else f'${abs(ac-prv):,.0f}'
+                    be=rec.get('beats_emh')
+                    if be is True: es2+=' ✓'
+                    elif be is False: es2+=' ✗'
                     ec='#10b981' if (es or 99)<0.5 else ('#f59e0b' if (es or 99)<1.0 else '#ef4444')
                     as2=f'${ac:,.0f}'
                 else: es2='pending'; ec='var(--mut)'; as2='-'
                 td_v=rec.get('t_days_at_record'); td_s=f'T-{int(td_v)}d' if td_v is not None else '-'
                 rws+=f'<tr><td>S{sn}</td><td>{ex}</td><td style="color:var(--mut);font-size:9px">{td_s}</td><td>${prv:,.0f}</td><td>{as2}</td><td style="color:{ec}">{es2}</td></tr>'
             nd=len([x for x in lg.get('records',[]) if x.get('actual_settlement')])
+            _emh_rs=[x for x in lg.get('records',[]) if x.get('beats_emh') is not None]
+            _emh_w=len([x for x in _emh_rs if x['beats_emh']])
+            _emh_s=f' | vs EMH: {_emh_w}/{len(_emh_rs)}勝' if _emh_rs else ''
+            _ncyc=len(set(x.get('expiry') for x in lg.get('records',[]) if x.get('actual_settlement') and not x.get('corrupted_gex')))
             slh=(f'<div style="padding:0 10px 10px"><div class="card"><div class="ct">SETTLEMENT LOG - UFT ACCURACY TRACKER</div>'
                  f'<table><thead><tr><th>S#</th><th>Expiry</th><th>T</th><th>Predicted</th><th>Actual</th><th>Error</th></tr></thead>'
                  f'<tbody>{rws}</tbody></table>'
-                 f'<div style="font-size:9px;color:var(--mut);margin-top:4px">Optimizer: {nd}/10 samples for weight optimization</div></div></div>')
+                 f'<div style="font-size:9px;color:var(--mut);margin-top:4px">Optimizer: {nd} samples / {_ncyc}週期 (需≥3週期){_emh_s} | ✓=贏EMH ✗=輸EMH</div></div></div>')
     except: pass
     clh=''
     if cla:
@@ -1136,7 +1180,8 @@ if __name__ == "__main__":
                 weights=uft_result.get("uft_weights", {}),
                 signals={
                     "fr":            data.get("fr"),
-                    "skew":          uft_result.get("skew_main"),
+                    "skew":          uft_result.get("skew_demeaned"),  # 去均值Skew（L2信號分析用）
+                    "skew_raw":      uft_result.get("skew_main"),
                     "dvol":          data.get("dvol"),
                     "pcr_main":      data.get(f"pcr_atm_{main_expiry}"),
                     "macd_4h":       (data.get("macd_4h") or data.get("macd", {}).get("4h") or {}).get("dif"),
@@ -1147,6 +1192,7 @@ if __name__ == "__main__":
                 sigma=uft_result.get("sigma", 4000),
                 regime=uft_result.get("regime", "POS"),
                 t_days=dl,  # 記錄此預測的剩餘天數（固定T值快照核心字段）
+                spot_at_record=data.get("spot"),  # EMH基準：模型必須贏「直接用Spot」
             )
             print(f"Recorded S{snapshot_num} → {main_expiry} T={dl}d ${uft_result['uft_median']:,.0f}")
         else:

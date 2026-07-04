@@ -143,7 +143,7 @@ if os.path.exists(local):
 else:
     print(f"NOT FOUND: {local}")
 
-for fname in ["data/oracle_market_data.json", "data/snapshot_counter.json", "data/settlement_log.json", "data/skew_history.json", "data/debug_settlement.json"]:
+for fname in ["data/oracle_market_data.json", "data/snapshot_counter.json", "data/settlement_log.json", "data/skew_history.json"]:
     if os.path.exists(fname):
         with open(fname, "rb") as f:
             push_bytes(fname, f.read(), f"auto: {fname.split('/')[-1]}")
