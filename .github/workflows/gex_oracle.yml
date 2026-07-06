@@ -2,7 +2,9 @@ name: GEX Oracle (每6h)
 
 on:
   schedule:
-    - cron: "0 2,8,14,20 * * *"
+    # 每小時 :15 觸發（避開整點壅塞），run_guard 決定是否實際執行
+    # 目標時段 UTC 02/08/14/20（台灣 10/16/22/04），守門邏輯見 src/run_guard.py
+    - cron: "15 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -23,13 +25,20 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Run guard
+        id: guard
+        run: python src/run_guard.py
+
       - name: Install deps
+        if: steps.guard.outputs.run == 'true' || github.event_name == 'workflow_dispatch'
         run: pip install requests anthropic
 
       - name: Fetch market data
+        if: steps.guard.outputs.run == 'true' || github.event_name == 'workflow_dispatch'
         run: python src/gex_oracle_fetch.py
 
       - name: Run Oracle analysis
+        if: steps.guard.outputs.run == 'true' || github.event_name == 'workflow_dispatch'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -40,6 +49,7 @@ jobs:
           python src/gex_oracle_auto.py
 
       - name: Push dashboard via GitHub API
+        if: steps.guard.outputs.run == 'true' || github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
