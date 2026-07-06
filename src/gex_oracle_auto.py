@@ -503,7 +503,8 @@ def generate_rule_based_collision(data, uft_result):
     else: verdict=f"NEUTRAL {bull_pct:.2f}"
     # Key Insight
     insights=[]
-    if dl<=7: insights.append(f"T-{dl}d結算Pin博弈：GEX Pin ${uft_med:,.0f} vs Spot ${spot:,.0f}（差${abs(spot-uft_med):,.0f}）")
+    _pin_v=float(uft_result.get("uft_mode",0) or 0)
+    if dl<=7: insights.append(f"T-{dl}d結算Pin博弈：GEX Pin ${_pin_v:,.0f} vs Spot ${spot:,.0f}（差${abs(spot-_pin_v):,.0f}）｜UFT中位 ${uft_med:,.0f}")
     if skew_main>15: insights.append(f"Skew {skew_main:+.1f}% 極度偏空，市場為下行付高溢價")
     elif skew_main>5: insights.append(f"Skew {skew_main:+.1f}% 偏空，空方防禦需求主導")
     if regime=="POS" and abs(spot-gf)<sigma*0.3: insights.append(f"Spot距GF僅{abs(spot-gf):,.0f}，Regime轉換風險高")
@@ -621,7 +622,11 @@ def generate_html(data, uft_result, collision, snapshot_num):
     try:
         now=datetime.now(timezone.utc)
         nxt=min((h for h in [0,8,16] if h>now.hour),default=24)
-        hfr=nxt-now.hour; facc=round(fr*(8-hfr),6); fns=f'{hfr}h{now.minute:02d}m'
+        # 剩餘時間 = 下一結算點 − 現在（原版 bug：直接顯示當前分鐘數，11:59 顯示 5h59m 實為 4h01m）
+        _rem_min=(nxt*60)-(now.hour*60+now.minute)
+        fns=f'{_rem_min//60}h{_rem_min%60:02d}m'
+        _elapsed_h=8-(_rem_min/60)          # 本 8h 週期已經過時數
+        facc=round(fr*_elapsed_h,6)
     except: facc=0; fns='N/A'
     st=''; stc='var(--mut)'; st3=''
     try:
