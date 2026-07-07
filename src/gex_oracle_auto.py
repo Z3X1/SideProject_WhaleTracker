@@ -1195,32 +1195,9 @@ if __name__ == "__main__":
         if hard_triggers:
             should_record = True
 
-        if should_record:
-            # 確認此 T 值窗口是否已有記錄（避免同一窗口記兩次）
-            opt_log = load_log()
-            existing = [r for r in opt_log.get("records", [])
-                        if r.get("expiry") == main_expiry
-                        and abs(parse_days_to_expiry(main_expiry) -
-                                (dl)) <= T_TOLERANCE  # 用 dl 近似
-                        and r.get("t_days_at_record") is not None
-                        and any(abs(r["t_days_at_record"] - t) <= T_TOLERANCE for t in TARGET_T)
-                        and any(abs(r["t_days_at_record"] - dl) <= T_TOLERANCE for t in TARGET_T)]
-            already_recorded = any(
-                r.get("expiry") == main_expiry and
-                r.get("t_days_at_record") is not None and
-                any(abs(r["t_days_at_record"] - t) <= T_TOLERANCE for t in TARGET_T) and
-                any(abs(r["t_days_at_record"] - dl) <= T_TOLERANCE)
-                for r in opt_log.get("records", [])
-            )
-            # 簡化：檢查同一到期日內最近記錄的 t_days_at_record 是否在同一窗口
-            recent_same_t = [r for r in opt_log.get("records", [])
-                             if r.get("expiry") == main_expiry
-                             and r.get("t_days_at_record") is not None
-                             and any(abs(r["t_days_at_record"] - dl) <= T_TOLERANCE for _ in [0])]
-            if recent_same_t and not hard_triggers:
-                print(f"[SKIP] S{snapshot_num} {main_expiry} T={dl}d 此窗口已有記錄，跳過")
-                should_record = False
-
+        # T 窗口去重由 record_prediction() 內部處理（uft_optimizer）
+        # 舊版此處的三段冗餘 dedup 含 any(bool) TypeError，會炸掉整個
+        # try 塊（連帶結算檢查與優化器），已切除。
         if should_record:
             record_prediction(
                 snapshot_num=snapshot_num,
@@ -1248,7 +1225,11 @@ if __name__ == "__main__":
             print(f"Recorded S{snapshot_num} → {main_expiry} T={dl}d ${uft_result['uft_median']:,.0f}")
         else:
             print(f"[NO RECORD] S{snapshot_num} {main_expiry} T={dl}d 不在固定T值窗口且無硬觸發")
-        # 自動結算檢查
+    except Exception as _e_rec:
+        print(f"record_prediction error: {_e_rec}")
+    # 結算檢查與優化器獨立於 record 錯誤（10JUL26 結算絕不能被連坐）
+    try:
+        from uft_optimizer import check_and_record_settlement, optimize_weights
         check_and_record_settlement()
         # 10筆以上嘗試優化；若有新權重產生 → 觸發 S++
         _old_w_str = str(json.load(open("data/settlement_log.json")).get("current_weights", {})) if os.path.exists("data/settlement_log.json") else ""
