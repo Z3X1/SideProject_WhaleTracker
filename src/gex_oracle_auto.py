@@ -733,7 +733,10 @@ def generate_html(data, uft_result, collision, snapshot_num):
                     ec='#10b981' if (es or 99)<0.5 else ('#f59e0b' if (es or 99)<1.0 else '#ef4444')
                     as2=f'${ac:,.0f}'
                 else: es2='pending'; ec='var(--mut)'; as2='-'
-                td_v=rec.get('t_days_at_record'); td_s=f'T-{int(td_v)}d' if td_v is not None else '-'
+                td_v=rec.get('t_days_at_record')
+                if td_v is None: td_s='-'
+                elif abs(td_v-round(td_v))<0.05: td_s=f'T-{round(td_v)}d'
+                else: td_s=f'T-{td_v:.1f}d'
                 rws+=f'<tr><td>S{sn}</td><td>{ex}</td><td style="color:var(--mut);font-size:9px">{td_s}</td><td>${prv:,.0f}</td><td>{as2}</td><td style="color:{ec}">{es2}</td></tr>'
             nd=len([x for x in lg.get('records',[]) if x.get('actual_settlement')])
             _emh_rs=[x for x in lg.get('records',[]) if x.get('beats_emh') is not None]
@@ -1141,9 +1144,17 @@ if __name__ == "__main__":
         hard_triggers.append(f"OI跳動{oi_change:+,.0f}張（{last_oi:.2f}→{oi:.2f}萬）")
 
     # 時間強制：T = 24h / 6h / 2h（由 generate_html T-checklist 已處理，這裡用 T<=1d 強制觸發）
-    dl = parse_days_to_expiry(data.get("expiries", ["7D"])[0])
+    _exp_trig = data.get("expiries", ["7D"])[0]
+    dl = parse_days_to_expiry(_exp_trig)
     if dl in [1, 0]:
-        hard_triggers.append(f"T={dl}d強制觸發（結算前最後窗口）")
+        # 每個 (expiry, dl) 只點火一次——否則結算前一整天每個邊界 run 都 S++（churn）
+        _fired = counter.get("t_forced_fired", {})
+        _fired_list = _fired.get(_exp_trig, [])
+        if dl not in _fired_list:
+            hard_triggers.append(f"T={dl}d強制觸發（結算前最後窗口）")
+            _fired_list.append(dl)
+            _fired[_exp_trig] = _fired_list
+            counter["t_forced_fired"] = _fired
 
     # 優化觸發（optimizer 本次跑完後若有新權重，也算觸發）
     # → 在 step 6 optimizer 跑完後補充判斷，這裡先留 flag
