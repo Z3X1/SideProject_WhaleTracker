@@ -1,23 +1,26 @@
 {
-  "last_snapshot": 123,
+  "last_snapshot": 124,
   "last_data": {
     "uft_median": 60288
   },
-  "count": 123,
-  "last_spot": 58336.09,
-  "last_fr": 0.00674625799809,
+  "count": 124,
+  "last_spot": 60833.345,
+  "last_fr": 0.01,
   "last_ls": 0,
-  "last_oi": 3.1629,
+  "last_oi": 3.0827,
   "hard_triggers": [
-    "OI\u8df3\u52d5+864\u5f35\uff083.08\u21923.16\u842c\uff09"
+    "FR\u7a7f\u8d8a+0.010%\uff08+0.00675\u2192+0.01000\uff09",
+    "Spot\u79fb\u52d5+2,497\uff08>1,088=0.5\u03c3\uff09",
+    "OI\u8df3\u52d5+802\u5f35\uff083.16\u21923.08\u842c\uff09",
+    "T=1d\u5f37\u5236\u89f8\u767c\uff08\u7d50\u7b97\u524d\u6700\u5f8c\u7a97\u53e3\uff09"
   ],
-  "last_trigger_ts": "2026-11-25T15:40:08.139077+00:00",
+  "last_trigger_ts": "2026-11-26T00:25:29.173970+00:00",
   "fr_armed": {
     "-0.01": true,
     "-0.005": true,
     "0.0": true,
     "0.005": true,
-    "0.01": true
+    "0.01": false
   },
   "t_forced_fired": {
     "10JUL26": [
@@ -30,6 +33,9 @@
       1
     ],
     "20NOV26": [
+      1
+    ],
+    "27NOV26": [
       1
     ]
   }
