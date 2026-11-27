@@ -2798,7 +2798,7 @@
       "sigma": 4497.56,
       "regime_at_prediction": "NEG",
       "spot_at_record": 61547.25,
-      "actual_settlement": null,
+      "actual_settlement": 61600.17,
       "components": {
         "gbm": 15386.81,
         "gex": 9450.0,
@@ -2824,8 +2824,10 @@
         "gamma_flip": 70193.0,
         "contradiction": 0.0
       },
-      "error_sigma": null,
-      "error_usd": null
+      "error_sigma": 0.0345,
+      "error_usd": 154.95,
+      "emh_error_usd": 52.92,
+      "beats_emh": false
     },
     {
       "snapshot_num": 114,
@@ -2837,7 +2839,7 @@
       "sigma": 4047.55,
       "regime_at_prediction": "NEG",
       "spot_at_record": 58845.56,
-      "actual_settlement": null,
+      "actual_settlement": 61600.17,
       "components": {
         "gbm": 14711.39,
         "gex": 9000.0,
@@ -2863,8 +2865,10 @@
         "gamma_flip": 70230.0,
         "contradiction": 0.0
       },
-      "error_sigma": null,
-      "error_usd": null
+      "error_sigma": 0.6084,
+      "error_usd": 2462.34,
+      "emh_error_usd": 2754.61,
+      "beats_emh": true
     },
     {
       "snapshot_num": 115,
@@ -2876,7 +2880,7 @@
       "sigma": 4736.06,
       "regime_at_prediction": "NEG",
       "spot_at_record": 59983.42,
-      "actual_settlement": null,
+      "actual_settlement": 61600.17,
       "components": {
         "gbm": 14995.85,
         "gex": 9000.0,
@@ -2902,8 +2906,10 @@
         "gamma_flip": 70075.0,
         "contradiction": 0.0
       },
-      "error_sigma": null,
-      "error_usd": null
+      "error_sigma": 0.2471,
+      "error_usd": 1170.27,
+      "emh_error_usd": 1616.75,
+      "beats_emh": true
     },
     {
       "snapshot_num": 116,
@@ -2915,7 +2921,7 @@
       "sigma": 4757.24,
       "regime_at_prediction": "NEG",
       "spot_at_record": 60194.47,
-      "actual_settlement": null,
+      "actual_settlement": 61600.17,
       "components": {
         "gbm": 15048.62,
         "gex": 9000.0,
@@ -2941,8 +2947,10 @@
         "gamma_flip": 70463.0,
         "contradiction": 0.0
       },
-      "error_sigma": null,
-      "error_usd": null
+      "error_sigma": 0.2171,
+      "error_usd": 1032.78,
+      "emh_error_usd": 1405.7,
+      "beats_emh": true
     },
     {
       "snapshot_num": 117,
@@ -2954,7 +2962,7 @@
       "sigma": 4279.19,
       "regime_at_prediction": "NEG",
       "spot_at_record": 59021.79,
-      "actual_settlement": null,
+      "actual_settlement": 61600.17,
       "components": {
         "gbm": 14755.45,
         "gex": 9000.0,
@@ -2980,8 +2988,10 @@
         "gamma_flip": 70771.0,
         "contradiction": 0.0
       },
-      "error_sigma": null,
-      "error_usd": null
+      "error_sigma": 0.4155,
+      "error_usd": 1777.94,
+      "emh_error_usd": 2578.38,
+      "beats_emh": true
     },
     {
       "snapshot_num": 118,
@@ -2993,7 +3003,7 @@
       "sigma": 4498.03,
       "regime_at_prediction": "NEG",
       "spot_at_record": 60787.72,
-      "actual_settlement": null,
+      "actual_settlement": 61600.17,
       "components": {
         "gbm": 15196.93,
         "gex": 9000.0,
@@ -3019,8 +3029,10 @@
         "gamma_flip": 70817.0,
         "contradiction": 0.0
       },
-      "error_sigma": null,
-      "error_usd": null
+      "error_sigma": 0.1942,
+      "error_usd": 873.63,
+      "emh_error_usd": 812.45,
+      "beats_emh": false
     },
     {
       "snapshot_num": 119,
@@ -3032,7 +3044,7 @@
       "sigma": 4093.18,
       "regime_at_prediction": "NEG",
       "spot_at_record": 61173.69,
-      "actual_settlement": null,
+      "actual_settlement": 61600.17,
       "components": {
         "gbm": 15293.42,
         "gex": 9450.0,
@@ -3058,8 +3070,10 @@
         "gamma_flip": 74287.0,
         "contradiction": 0.0
       },
-      "error_sigma": null,
-      "error_usd": null
+      "error_sigma": 0.0413,
+      "error_usd": 169.17,
+      "emh_error_usd": 426.48,
+      "beats_emh": true
     },
     {
       "snapshot_num": 120,
@@ -3071,7 +3085,7 @@
       "sigma": 3708.61,
       "regime_at_prediction": "NEG",
       "spot_at_record": 61154.11,
-      "actual_settlement": null,
+      "actual_settlement": 61600.17,
       "components": {
         "gbm": 15288.53,
         "gex": 9450.0,
@@ -3097,8 +3111,10 @@
         "gamma_flip": 75380.0,
         "contradiction": 0.0
       },
-      "error_sigma": null,
-      "error_usd": null
+      "error_sigma": 0.1911,
+      "error_usd": 708.55,
+      "emh_error_usd": 446.06,
+      "beats_emh": false
     },
     {
       "snapshot_num": 122,
@@ -3110,7 +3126,7 @@
       "sigma": 3665.94,
       "regime_at_prediction": "NEG",
       "spot_at_record": 59677.92,
-      "actual_settlement": null,
+      "actual_settlement": 61600.17,
       "components": {
         "gbm": 14919.48,
         "gex": 9000.0,
@@ -3136,8 +3152,10 @@
         "gamma_flip": 75519.0,
         "contradiction": 0.0
       },
-      "error_sigma": null,
-      "error_usd": null
+      "error_sigma": 0.355,
+      "error_usd": 1301.53,
+      "emh_error_usd": 1922.25,
+      "beats_emh": true
     },
     {
       "snapshot_num": 123,
@@ -3149,7 +3167,7 @@
       "sigma": 2950.23,
       "regime_at_prediction": "NEG",
       "spot_at_record": 58336.09,
-      "actual_settlement": null,
+      "actual_settlement": 61600.17,
       "components": {
         "gbm": 14584.02,
         "gex": 9000.0,
@@ -3175,8 +3193,10 @@
         "gamma_flip": 75592.0,
         "contradiction": 0.0
       },
-      "error_sigma": null,
-      "error_usd": null
+      "error_sigma": 0.8748,
+      "error_usd": 2580.9,
+      "emh_error_usd": 3264.08,
+      "beats_emh": true
     },
     {
       "snapshot_num": 124,
@@ -3188,7 +3208,7 @@
       "sigma": 2175.35,
       "regime_at_prediction": "NEG",
       "spot_at_record": 60833.35,
-      "actual_settlement": null,
+      "actual_settlement": 61600.17,
       "components": {
         "gbm": 15208.34,
         "gex": 9450.0,
@@ -3214,8 +3234,10 @@
         "gamma_flip": 75779.0,
         "contradiction": 0.0
       },
-      "error_sigma": null,
-      "error_usd": null
+      "error_sigma": 0.1303,
+      "error_usd": 283.41,
+      "emh_error_usd": 766.82,
+      "beats_emh": true
     },
     {
       "snapshot_num": 125,
@@ -3227,7 +3249,7 @@
       "sigma": 2174.72,
       "regime_at_prediction": "NEG",
       "spot_at_record": 60757.36,
-      "actual_settlement": null,
+      "actual_settlement": 61600.17,
       "components": {
         "gbm": 15189.34,
         "gex": 9450.0,
@@ -3253,8 +3275,10 @@
         "gamma_flip": 75743.0,
         "contradiction": 0.0
       },
-      "error_sigma": null,
-      "error_usd": null
+      "error_sigma": 0.1055,
+      "error_usd": 229.35,
+      "emh_error_usd": 842.81,
+      "beats_emh": true
     },
     {
       "snapshot_num": 126,
@@ -3266,7 +3290,7 @@
       "sigma": 1474.57,
       "regime_at_prediction": "NEG",
       "spot_at_record": 60584.07,
-      "actual_settlement": null,
+      "actual_settlement": 61600.17,
       "components": {
         "gbm": 15146.02,
         "gex": 9000.0,
@@ -3290,6 +3314,47 @@
         "macd_4h": -117.36,
         "regime_pos": 0.0,
         "gamma_flip": 75652.0,
+        "contradiction": 0.0
+      },
+      "error_sigma": 0.7926,
+      "error_usd": 1168.79,
+      "emh_error_usd": 1016.1,
+      "beats_emh": false
+    },
+    {
+      "snapshot_num": 127,
+      "expiry": "4DEC26",
+      "timestamp": "2026-11-27T12:30:36.246873+00:00",
+      "t_days_at_record": 6.81,
+      "predicted_median": 60742.26,
+      "predicted_mode": 60000,
+      "sigma": 5824.33,
+      "regime_at_prediction": "POS",
+      "spot_at_record": 61489.81,
+      "actual_settlement": null,
+      "components": {
+        "gbm": 17217.15,
+        "gex": 12000.0,
+        "behavior": 16881.1,
+        "bayesian": 7444.01,
+        "timedecay": 7200.0
+      },
+      "weights_used": {
+        "gbm": 0.28,
+        "gex": 0.2,
+        "behavior": 0.28,
+        "bayesian": 0.12,
+        "timedecay": 0.12
+      },
+      "signals": {
+        "fr": -0.0,
+        "skew": -1.99,
+        "skew_raw": 10.15,
+        "dvol": 68.39756,
+        "pcr_main": 2.85,
+        "macd_4h": 219.61,
+        "regime_pos": 1.0,
+        "gamma_flip": 60410.0,
         "contradiction": 0.0
       },
       "error_sigma": null,
